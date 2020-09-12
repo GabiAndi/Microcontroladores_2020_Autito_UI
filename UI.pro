@@ -19,12 +19,14 @@ SOURCES += \
     dialogmododepuracion.cpp \
     main.cpp \
     mainwindow.cpp \
-    mainwindowdepuracionserie.cpp
+    mainwindowdepuracionserie.cpp \
+    widgetpanel.cpp
 
 HEADERS += \
     dialogmododepuracion.h \
     mainwindow.h \
-    mainwindowdepuracionserie.h
+    mainwindowdepuracionserie.h \
+    widgetpanel.h
 
 FORMS += \
     dialogmododepuracion.ui \

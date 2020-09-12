@@ -39,10 +39,9 @@ class MainWindowDepuracionSerie : public QMainWindow
         void on_pushButtonActualizarPuertos_clicked();
         void on_pushButtonConectarDesconectar_clicked();
         void on_pushButtonLimpiar_clicked();
-        void on_pushButtonAddPayloadByte_clicked();
-        void on_pushButtonRemovePayloadByte_clicked();
         void on_pushButtonCapturaDeDatos_clicked();
         void on_pushButtonEnviar_clicked();
+        void on_checkBoxCMD_stateChanged(int arg1);
 };
 
 #endif // MAINWINDOWDEPURACIONSERIE_H

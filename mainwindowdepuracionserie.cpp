@@ -320,16 +320,6 @@ void MainWindowDepuracionSerie::on_pushButtonLimpiar_clicked()
     ui->tableWidgetDatosRecibidos->setRowCount(0);
 }
 
-void MainWindowDepuracionSerie::on_pushButtonAddPayloadByte_clicked()
-{
-    ui->tableWidgetDatosEnvio->insertRow(ui->tableWidgetDatosEnvio->rowCount());
-}
-
-void MainWindowDepuracionSerie::on_pushButtonRemovePayloadByte_clicked()
-{
-    ui->tableWidgetDatosEnvio->removeRow(ui->tableWidgetDatosEnvio->rowCount() - 1);
-}
-
 void MainWindowDepuracionSerie::on_pushButtonCapturaDeDatos_clicked()
 {
     captureEnable = !captureEnable;
@@ -347,6 +337,29 @@ void MainWindowDepuracionSerie::on_pushButtonCapturaDeDatos_clicked()
 
 void MainWindowDepuracionSerie::on_pushButtonEnviar_clicked()
 {
+    QString text = ui->plainTextEditPayload->toPlainText();
+
+    text.append(' ');
+
+    QStringList payload;
+    uint16_t spaces = text.count(' ');
+
+    while (spaces > 0)
+    {
+        if (text.at(0) != ' ')
+        {
+            payload.append(text.section(' ', 0, 0));
+            text.remove(0, text.section(' ', 0, 0).length());
+        }
+
+        else
+        {
+            text.remove(0, 1);
+
+            spaces--;
+        }
+    }
+
     QByteArray data;
 
     uint8_t checksum = 0;
@@ -356,56 +369,73 @@ void MainWindowDepuracionSerie::on_pushButtonEnviar_clicked()
     data.append((uint8_t)('E'));
     data.append((uint8_t)('R'));
 
-    if (ui->comboBoxComandos->currentText().contains("XX"))
+    if (ui->checkBoxHex->isChecked())
     {
-        if (ui->tableWidgetDatosEnvio->rowCount() > 0)
+        data.append((uint8_t)(payload.length()));
+    }
+
+    else
+    {
+        data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
+    }
+
+    data.append((uint8_t)(':'));
+
+    if (ui->checkBoxCMD->isChecked())
+    {
+        if (ui->lineEditCMD->text().length() > 0)
         {
-            data.append((uint8_t)(ui->tableWidgetDatosEnvio->rowCount()) - 1);
-
-            data.append((uint8_t)(':'));
-
-            data.append((uint8_t)(ui->tableWidgetDatosEnvio->item(0, 0)->text().toUInt(nullptr, 16)));
-
-            for (uint16_t i = 1 ; i < ui->tableWidgetDatosEnvio->rowCount() ; i++)
-            {
-                data.append((uint8_t)(ui->tableWidgetDatosEnvio->item(i, 0)->text().toUInt(nullptr, 16)));
-            }
-
-            for (uint16_t i = 0 ; i < ui->tableWidgetDatosEnvio->rowCount() + 6 ; i++)
-            {
-                checksum ^= (uint8_t)(data.at(i));
-            }
+            data.append((uint8_t)(ui->lineEditCMD->text().toUInt(nullptr, 16)));
         }
 
         else
         {
-            QMessageBox(QMessageBox::Icon::Critical, "Error de comando", "Ingrese el comando como dato en la primer fila del payload.",
+            QMessageBox(QMessageBox::Icon::Critical, "Error de comando",
+                        "Ingrese el comando como dato.",
                         QMessageBox::Button::Ok, this).exec();
-
-            return;
         }
     }
 
     else
     {
-        data.append((uint8_t)(ui->tableWidgetDatosEnvio->rowCount()));
+        data.append(ui->comboBoxComandos->currentText().left(2).toUInt(nullptr, 16));
+    }
 
-        data.append((uint8_t)(':'));
-
-        data.append((uint8_t)(ui->comboBoxComandos->currentText().left(2).toUInt(nullptr, 16)));
-
-        for (uint16_t i = 0 ; i < ui->tableWidgetDatosEnvio->rowCount() ; i++)
+    if (ui->checkBoxHex->isChecked())
+    {
+        for (QString byte : payload)
         {
-            data.append((uint8_t)(ui->tableWidgetDatosEnvio->item(i, 0)->text().toUInt(nullptr, 16)));
+            data.append((uint8_t)(byte.toUInt(nullptr, 16)));
         }
+    }
 
-        for (uint16_t i = 0 ; i < ui->tableWidgetDatosEnvio->rowCount() + 7 ; i++)
+    else
+    {
+        for (QChar byte : ui->plainTextEditPayload->toPlainText())
         {
-            checksum ^= (uint8_t)(data.at(i));
+            data.append((uint8_t)(byte.toLatin1()));
         }
+    }
+
+    for (char byte : data)
+    {
+        checksum ^= (uint8_t)(byte);
     }
 
     data.append(checksum);
 
     qSerialPort->write(data);
+}
+
+void MainWindowDepuracionSerie::on_checkBoxCMD_stateChanged(int arg1)
+{
+    if (arg1 == 0)
+    {
+        ui->lineEditCMD->setEnabled(false);
+    }
+
+    else
+    {
+        ui->lineEditCMD->setEnabled(true);
+    }
 }

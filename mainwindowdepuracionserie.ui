@@ -312,6 +312,27 @@
                </property>
               </widget>
              </item>
+             <item>
+              <layout class="QHBoxLayout" name="horizontalLayout_8">
+               <item>
+                <widget class="QLineEdit" name="lineEditCMD">
+                 <property name="enabled">
+                  <bool>false</bool>
+                 </property>
+                 <property name="maxLength">
+                  <number>2</number>
+                 </property>
+                </widget>
+               </item>
+               <item>
+                <widget class="QCheckBox" name="checkBoxCMD">
+                 <property name="text">
+                  <string>Manual</string>
+                 </property>
+                </widget>
+               </item>
+              </layout>
+             </item>
             </layout>
            </item>
            <item>
@@ -326,78 +347,7 @@
              <item>
               <layout class="QHBoxLayout" name="horizontalLayout_6">
                <item>
-                <widget class="QTableWidget" name="tableWidgetDatosEnvio">
-                 <property name="dragEnabled">
-                  <bool>false</bool>
-                 </property>
-                 <column>
-                  <property name="text">
-                   <string>HEX</string>
-                  </property>
-                 </column>
-                </widget>
-               </item>
-               <item>
-                <layout class="QVBoxLayout" name="verticalLayout_12">
-                 <item>
-                  <spacer name="verticalSpacer_6">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButtonAddPayloadByte">
-                   <property name="sizePolicy">
-                    <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
-                     <horstretch>0</horstretch>
-                     <verstretch>0</verstretch>
-                    </sizepolicy>
-                   </property>
-                   <property name="maximumSize">
-                    <size>
-                     <width>40</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>+</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <widget class="QPushButton" name="pushButtonRemovePayloadByte">
-                   <property name="maximumSize">
-                    <size>
-                     <width>40</width>
-                     <height>16777215</height>
-                    </size>
-                   </property>
-                   <property name="text">
-                    <string>-</string>
-                   </property>
-                  </widget>
-                 </item>
-                 <item>
-                  <spacer name="verticalSpacer_7">
-                   <property name="orientation">
-                    <enum>Qt::Vertical</enum>
-                   </property>
-                   <property name="sizeHint" stdset="0">
-                    <size>
-                     <width>20</width>
-                     <height>40</height>
-                    </size>
-                   </property>
-                  </spacer>
-                 </item>
-                </layout>
+                <widget class="QPlainTextEdit" name="plainTextEditPayload"/>
                </item>
               </layout>
              </item>
@@ -417,6 +367,13 @@
                 </size>
                </property>
               </spacer>
+             </item>
+             <item>
+              <widget class="QCheckBox" name="checkBoxHex">
+               <property name="text">
+                <string>Hex</string>
+               </property>
+              </widget>
              </item>
              <item>
               <widget class="QPushButton" name="pushButtonEnviar">
