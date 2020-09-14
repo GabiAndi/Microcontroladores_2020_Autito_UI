@@ -1,4 +1,4 @@
-QT       += core gui serialport
+QT       += core gui serialport network
 
 greaterThan(QT_MAJOR_VERSION, 4): QT += widgets
 
@@ -16,22 +16,28 @@ DEFINES += QT_DEPRECATED_WARNINGS
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
 SOURCES += \
-    dialogmododepuracion.cpp \
+    dialogconectarudp.cpp \
+    dialogconectarusb.cpp \
     main.cpp \
     mainwindow.cpp \
-    mainwindowdepuracionserie.cpp \
+    mainwindowdepuracionudp.cpp \
+    mainwindowdepuracionusb.cpp \
     widgetpanel.cpp
 
 HEADERS += \
-    dialogmododepuracion.h \
+    dialogconectarudp.h \
+    dialogconectarusb.h \
     mainwindow.h \
-    mainwindowdepuracionserie.h \
+    mainwindowdepuracionudp.h \
+    mainwindowdepuracionusb.h \
     widgetpanel.h
 
 FORMS += \
-    dialogmododepuracion.ui \
+    dialogconectarudp.ui \
+    dialogconectarusb.ui \
     mainwindow.ui \
-    mainwindowdepuracionserie.ui
+    mainwindowdepuracionudp.ui \
+    mainwindowdepuracionusb.ui
 
 RC_ICONS = ico.ico
 

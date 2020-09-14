@@ -4,9 +4,12 @@
 #include <QMainWindow>
 
 #include <QSerialPort>
-#include <QSerialPortInfo>
+#include <QUdpSocket>
 
-#include "dialogmododepuracion.h"
+#include "mainwindowdepuracionusb.h"
+#include "mainwindowdepuracionudp.h"
+#include "dialogconectarusb.h"
+#include "dialogconectarudp.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindow; }
@@ -23,12 +26,22 @@ class MainWindow : public QMainWindow
     private:
         Ui::MainWindow *ui;
 
-        DialogModoDepuracion *dialogModeDepuracion = nullptr;
+        QSerialPort *serialPort = nullptr;
+        QUdpSocket *udpSocket = nullptr;
 
-        QSerialPort *qSerialPort = nullptr;
+        QHostAddress address;
+        quint16 port = 0;
+        bool isConectUdp = false;
+
+        MainWindowDepuracionUSB *mainWindowDepuracionUSB = nullptr;
+        MainWindowDepuracionUDP *mainWindowDepuracionUDP = nullptr;
+        DialogConectarUSB *dialogConectarUSB = nullptr;
+        DialogConectarUDP *dialogConectarUDP = nullptr;
 
     private slots:
-        void on_actionSalir_triggered();
-        void on_actionVentana_de_depuraci_n_triggered();
+        void on_actionUSB_triggered();
+        void on_actionUDP_triggered();
+        void on_actionUSB_2_triggered();
+        void on_actionUDP_2_triggered();
 };
 #endif // MAINWINDOW_H

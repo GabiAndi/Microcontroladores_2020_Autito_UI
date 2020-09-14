@@ -7,27 +7,68 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
-    qSerialPort = new QSerialPort();
+    serialPort = new QSerialPort();
+    udpSocket = new QUdpSocket();
 }
 
 MainWindow::~MainWindow()
 {
-    delete qSerialPort;
+    delete serialPort;
+    delete udpSocket;
 
     delete ui;
 }
 
-
-void MainWindow::on_actionSalir_triggered()
+void MainWindow::on_actionUSB_triggered()
 {
-    exit(0);
+    if (serialPort->isOpen())
+    {
+        mainWindowDepuracionUSB = new MainWindowDepuracionUSB(this);
+        mainWindowDepuracionUSB->setSerialPort(serialPort);
+        mainWindowDepuracionUSB->show();
+    }
+
+    else
+    {
+        QMessageBox(QMessageBox::Icon::Warning, "Error al iniciar la depuración", "Primero conectese a un puerto serie",
+                    QMessageBox::Button::Ok, this).exec();
+
+        dialogConectarUSB = new DialogConectarUSB(this);
+        dialogConectarUSB->setSerialPort(serialPort);
+        dialogConectarUSB->show();
+    }
 }
 
-void MainWindow::on_actionVentana_de_depuraci_n_triggered()
+void MainWindow::on_actionUDP_triggered()
 {
-    dialogModeDepuracion = new DialogModoDepuracion(this);
+    if (isConectUdp)
+    {
+        mainWindowDepuracionUDP = new MainWindowDepuracionUDP(this);
+        mainWindowDepuracionUDP->setUdpSocket(udpSocket, &isConectUdp, &address, &port);
+        mainWindowDepuracionUDP->show();
+    }
 
-    dialogModeDepuracion->setSerialPort(qSerialPort);
+    else
+    {
+        QMessageBox(QMessageBox::Icon::Warning, "Error al iniciar la depuración", "Primero conectese a una dirección IP",
+                    QMessageBox::Button::Ok, this).exec();
 
-    dialogModeDepuracion->show();
+        dialogConectarUDP = new DialogConectarUDP(this);
+        dialogConectarUDP->setUdpSocket(&isConectUdp, &address, &port);
+        dialogConectarUDP->show();
+    }
+}
+
+void MainWindow::on_actionUSB_2_triggered()
+{
+    dialogConectarUSB = new DialogConectarUSB(this);
+    dialogConectarUSB->setSerialPort(serialPort);
+    dialogConectarUSB->show();
+}
+
+void MainWindow::on_actionUDP_2_triggered()
+{
+    dialogConectarUDP = new DialogConectarUDP(this);
+    dialogConectarUDP->setUdpSocket(&isConectUdp, &address, &port);
+    dialogConectarUDP->show();
 }

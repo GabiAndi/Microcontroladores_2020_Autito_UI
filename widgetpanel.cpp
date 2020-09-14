@@ -9,5 +9,5 @@ void WidgetPanel::paintEvent(QPaintEvent *)
 {
     QPainter painter(this);
 
-    painter.drawEllipse(100, 100, 100, 100);
+    //painter.drawEllipse(100, 100, 100, 100);
 }

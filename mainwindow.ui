@@ -36,34 +36,49 @@
     <property name="title">
      <string>Archivo</string>
     </property>
-    <addaction name="separator"/>
-    <addaction name="separator"/>
-    <addaction name="actionSalir"/>
+    <widget class="QMenu" name="menuConectar">
+     <property name="title">
+      <string>Conectar</string>
+     </property>
+     <addaction name="actionUSB_2"/>
+     <addaction name="actionUDP_2"/>
+    </widget>
+    <addaction name="menuConectar"/>
    </widget>
    <widget class="QMenu" name="menuOpciones">
     <property name="title">
      <string>Opciones</string>
     </property>
-    <addaction name="actionVentana_de_depuraci_n"/>
-   </widget>
-   <widget class="QMenu" name="menuAyuda">
-    <property name="title">
-     <string>Ayuda</string>
-    </property>
+    <widget class="QMenu" name="menuDepuraci_n">
+     <property name="title">
+      <string>Depuración</string>
+     </property>
+     <addaction name="actionUSB"/>
+     <addaction name="actionUDP"/>
+    </widget>
+    <addaction name="menuDepuraci_n"/>
    </widget>
    <addaction name="menuArchivo"/>
    <addaction name="menuOpciones"/>
-   <addaction name="menuAyuda"/>
   </widget>
-  <widget class="QStatusBar" name="statusbar"/>
-  <action name="actionSalir">
+  <action name="actionUSB">
    <property name="text">
-    <string>Salir</string>
+    <string>USB</string>
    </property>
   </action>
-  <action name="actionVentana_de_depuraci_n">
+  <action name="actionUDP">
    <property name="text">
-    <string>Ventana de depuración</string>
+    <string>UDP</string>
+   </property>
+  </action>
+  <action name="actionUSB_2">
+   <property name="text">
+    <string>USB</string>
+   </property>
+  </action>
+  <action name="actionUDP_2">
+   <property name="text">
+    <string>UDP</string>
    </property>
   </action>
  </widget>
