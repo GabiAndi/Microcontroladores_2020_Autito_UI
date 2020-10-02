@@ -41,10 +41,10 @@ void MainWindow::on_actionUSB_triggered()
 
 void MainWindow::on_actionUDP_triggered()
 {
-    if (isConectUdp)
+    if (udpSocket->isOpen())
     {
         mainWindowDepuracionUDP = new MainWindowDepuracionUDP(this);
-        mainWindowDepuracionUDP->setUdpSocket(udpSocket, &isConectUdp, &address, &port);
+        mainWindowDepuracionUDP->setUdpSocket(udpSocket, &ip, &port);
         mainWindowDepuracionUDP->show();
     }
 
@@ -54,7 +54,7 @@ void MainWindow::on_actionUDP_triggered()
                     QMessageBox::Button::Ok, this).exec();
 
         dialogConectarUDP = new DialogConectarUDP(this);
-        dialogConectarUDP->setUdpSocket(&isConectUdp, &address, &port);
+        dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
         dialogConectarUDP->show();
     }
 }
@@ -69,6 +69,6 @@ void MainWindow::on_actionUSB_2_triggered()
 void MainWindow::on_actionUDP_2_triggered()
 {
     dialogConectarUDP = new DialogConectarUDP(this);
-    dialogConectarUDP->setUdpSocket(&isConectUdp, &address, &port);
+    dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
     dialogConectarUDP->show();
 }

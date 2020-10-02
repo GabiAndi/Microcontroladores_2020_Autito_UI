@@ -18,15 +18,15 @@ void DialogConectarUDP::closeEvent(QCloseEvent *)
     deleteLater();
 }
 
-void DialogConectarUDP::setUdpSocket(bool *isConectUdp, QHostAddress *address, quint16 *port)
+void DialogConectarUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port)
 {
-    this->isConectUdp = isConectUdp;
-    this->address = address;
+    this->udpSocket = udpSocket;
+    this->ip = ip;
     this->port = port;
 
-    if (*isConectUdp)
+    if (udpSocket->isOpen())
     {
-        ui->lineEditIP->setText(address->toString());
+        ui->lineEditIP->setText(ip->toString());
         ui->lineEditPuerto->setText(QString::asprintf("%d", *port));
 
         ui->lineEditIP->setEnabled(false);
@@ -42,9 +42,9 @@ void DialogConectarUDP::on_pushButtonCancelar_clicked()
 
 void DialogConectarUDP::on_pushButtonConectar_clicked()
 {
-    if (*isConectUdp)
+    if (udpSocket->isOpen())
     {
-        *isConectUdp = false;
+        udpSocket->close();
 
         ui->lineEditIP->setEnabled(true);
         ui->lineEditPuerto->setEnabled(true);
@@ -53,8 +53,11 @@ void DialogConectarUDP::on_pushButtonConectar_clicked()
 
     else
     {
-        *isConectUdp = true;
-        *address = QHostAddress(ui->lineEditIP->text());
+        udpSocket->open(QIODevice::ReadWrite);
+        udpSocket->abort();
+        udpSocket->bind(ui->lineEditPuerto->text().toUInt());
+
+        ip->setAddress(ui->lineEditIP->text());
         *port = ui->lineEditPuerto->text().toUInt();
 
         ui->lineEditIP->setEnabled(false);

@@ -27,11 +27,10 @@ class MainWindow : public QMainWindow
         Ui::MainWindow *ui;
 
         QSerialPort *serialPort = nullptr;
-        QUdpSocket *udpSocket = nullptr;
 
-        QHostAddress address;
-        quint16 port = 0;
-        bool isConectUdp = false;
+        QUdpSocket *udpSocket = nullptr;
+        QHostAddress ip;
+        quint16 port;
 
         MainWindowDepuracionUSB *mainWindowDepuracionUSB = nullptr;
         MainWindowDepuracionUDP *mainWindowDepuracionUDP = nullptr;

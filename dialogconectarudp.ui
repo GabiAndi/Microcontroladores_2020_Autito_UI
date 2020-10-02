@@ -10,23 +10,23 @@
     <x>0</x>
     <y>0</y>
     <width>440</width>
-    <height>160</height>
+    <height>180</height>
    </rect>
   </property>
   <property name="minimumSize">
    <size>
     <width>440</width>
-    <height>160</height>
+    <height>180</height>
    </size>
   </property>
   <property name="maximumSize">
    <size>
     <width>440</width>
-    <height>160</height>
+    <height>180</height>
    </size>
   </property>
   <property name="windowTitle">
-   <string>Dialog</string>
+   <string>Conectar</string>
   </property>
   <layout class="QVBoxLayout" name="verticalLayout_4">
    <item>

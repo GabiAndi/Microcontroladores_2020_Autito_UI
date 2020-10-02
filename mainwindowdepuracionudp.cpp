@@ -9,8 +9,6 @@ MainWindowDepuracionUDP::MainWindowDepuracionUDP(QWidget *parent) :
 
     // Comandos
     ui->comboBoxComandos->addItem("F0 | Alive");
-    ui->comboBoxComandos->addItem("F1 | Modo depuración");
-    ui->comboBoxComandos->addItem("F2 | Enviar comando AT");
 }
 
 MainWindowDepuracionUDP::~MainWindowDepuracionUDP()
@@ -18,11 +16,10 @@ MainWindowDepuracionUDP::~MainWindowDepuracionUDP()
     delete ui;
 }
 
-void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, bool *isConectedUdp, QHostAddress *address, quint16 *port)
+void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port)
 {
     this->udpSocket = udpSocket;
-    this->isConectedUdp = isConectedUdp;
-    this->address = address;
+    this->ip = ip;
     this->port = port;
 
     connect(udpSocket, &QUdpSocket::readyRead, this, &MainWindowDepuracionUDP::readData);
@@ -30,35 +27,42 @@ void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, bool *isConect
 
 void MainWindowDepuracionUDP::closeEvent(QCloseEvent *)
 {
+    disconnect(udpSocket, &QUdpSocket::readyRead, this, &MainWindowDepuracionUDP::readData);
+
     deleteLater();
 }
 
 void MainWindowDepuracionUDP::readData()
 {
-    QByteArray dataRead = udpSocket->readAll();
-
-    if (captureEnable)
+    while (udpSocket->hasPendingDatagrams())
     {
-        for (uint8_t data : dataRead)
+        QNetworkDatagram datagram = udpSocket->receiveDatagram();
+
+        QByteArray dataRead = datagram.data();
+
+        if (captureEnable)
         {
-            ui->tableWidgetDatosRecibidos->insertRow(ui->tableWidgetDatosRecibidos->rowCount());
-
-            if (data < 0x10)
+            for (uint8_t data : dataRead)
             {
-                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
-                                                       new QTableWidgetItem(QString::asprintf("0%x", data)));
-            }
+                ui->tableWidgetDatosRecibidos->insertRow(ui->tableWidgetDatosRecibidos->rowCount());
 
-            else
-            {
-                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
-                                                       new QTableWidgetItem(QString::asprintf("%x", data)));
-            }
+                if (data < 0x10)
+                {
+                    ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
+                                                           new QTableWidgetItem(QString::asprintf("0%x", data)));
+                }
 
-            ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 1,
-                                                   new QTableWidgetItem(QString::asprintf("%c", data)));
-            ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 2,
-                                                   new QTableWidgetItem(QString::asprintf("%d", data)));
+                else
+                {
+                    ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
+                                                           new QTableWidgetItem(QString::asprintf("%x", data)));
+                }
+
+                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 1,
+                                                       new QTableWidgetItem(QString::asprintf("%c", data)));
+                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 2,
+                                                       new QTableWidgetItem(QString::asprintf("%d", data)));
+            }
         }
     }
 }
@@ -87,31 +91,8 @@ void MainWindowDepuracionUDP::on_pushButtonCapturaDeDatos_clicked()
 
 void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
 {
-    QString text = ui->plainTextEditPayload->toPlainText();
-
-    text.append(' ');
-
-    QStringList payload;
-    uint16_t spaces = text.count(' ');
-
-    while (spaces > 0)
-    {
-        if (text.at(0) != ' ')
-        {
-            payload.append(text.section(' ', 0, 0));
-            text.remove(0, text.section(' ', 0, 0).length());
-        }
-
-        else
-        {
-            text.remove(0, 1);
-
-            spaces--;
-        }
-    }
-
     QByteArray data;
-
+    QStringList payload;
     uint8_t checksum = 0;
 
     data.append((uint8_t)('U'));
@@ -121,12 +102,42 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
 
     if (ui->checkBoxHex->isChecked())
     {
+        QString text = ui->plainTextEditPayload->toPlainText();
+
+        text.append(' ');
+
+        uint16_t spaces = text.count(' ');
+
+        while (spaces > 0)
+        {
+            if (text.at(0) != ' ')
+            {
+                payload.append(text.section(' ', 0, 0));
+                text.remove(0, text.section(' ', 0, 0).length());
+            }
+
+            else
+            {
+                text.remove(0, 1);
+
+                spaces--;
+            }
+        }
+
         data.append((uint8_t)(payload.length()));
     }
 
     else
     {
-        data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
+        if (ui->checkBoxNLCR->isChecked())
+        {
+            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length() + 2));
+        }
+
+        else
+        {
+            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
+        }
     }
 
     data.append((uint8_t)(':'));
@@ -165,6 +176,12 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
         {
             data.append((uint8_t)(byte.toLatin1()));
         }
+
+        if (ui->checkBoxNLCR->isChecked())
+        {
+            data.append('\r');
+            data.append('\n');
+        }
     }
 
     for (char byte : data)
@@ -174,7 +191,10 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
 
     data.append(checksum);
 
-    udpSocket->writeDatagram(data, *address, *port);
+    data.append('\r');
+    data.append('\n');
+
+    udpSocket->writeDatagram(data, *ip, *port);
 }
 
 void MainWindowDepuracionUDP::on_checkBoxCMD_stateChanged(int arg1)

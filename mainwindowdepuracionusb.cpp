@@ -86,31 +86,8 @@ void MainWindowDepuracionUSB::on_pushButtonCapturaDeDatos_clicked()
 
 void MainWindowDepuracionUSB::on_pushButtonEnviar_clicked()
 {
-    QString text = ui->plainTextEditPayload->toPlainText();
-
-    text.append(' ');
-
-    QStringList payload;
-    uint16_t spaces = text.count(' ');
-
-    while (spaces > 0)
-    {
-        if (text.at(0) != ' ')
-        {
-            payload.append(text.section(' ', 0, 0));
-            text.remove(0, text.section(' ', 0, 0).length());
-        }
-
-        else
-        {
-            text.remove(0, 1);
-
-            spaces--;
-        }
-    }
-
     QByteArray data;
-
+    QStringList payload;
     uint8_t checksum = 0;
 
     data.append((uint8_t)('U'));
@@ -120,12 +97,42 @@ void MainWindowDepuracionUSB::on_pushButtonEnviar_clicked()
 
     if (ui->checkBoxHex->isChecked())
     {
+        QString text = ui->plainTextEditPayload->toPlainText();
+
+        text.append(' ');
+
+        uint16_t spaces = text.count(' ');
+
+        while (spaces > 0)
+        {
+            if (text.at(0) != ' ')
+            {
+                payload.append(text.section(' ', 0, 0));
+                text.remove(0, text.section(' ', 0, 0).length());
+            }
+
+            else
+            {
+                text.remove(0, 1);
+
+                spaces--;
+            }
+        }
+
         data.append((uint8_t)(payload.length()));
     }
 
     else
     {
-        data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
+        if (ui->checkBoxNLCR->isChecked())
+        {
+            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length() + 2));
+        }
+
+        else
+        {
+            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
+        }
     }
 
     data.append((uint8_t)(':'));
@@ -163,6 +170,12 @@ void MainWindowDepuracionUSB::on_pushButtonEnviar_clicked()
         for (QChar byte : ui->plainTextEditPayload->toPlainText())
         {
             data.append((uint8_t)(byte.toLatin1()));
+        }
+
+        if (ui->checkBoxNLCR->isChecked())
+        {
+            data.append('\r');
+            data.append('\n');
         }
     }
 

@@ -4,6 +4,7 @@
 #include <QMainWindow>
 
 #include <QUdpSocket>
+#include <QNetworkDatagram>
 #include <QMessageBox>
 
 #include <QDebug>
@@ -18,7 +19,7 @@ class MainWindowDepuracionUDP : public QMainWindow
         explicit MainWindowDepuracionUDP(QWidget *parent = nullptr);
         ~MainWindowDepuracionUDP();
 
-        void setUdpSocket(QUdpSocket *udpSocket, bool *isConectedUdp, QHostAddress *address, quint16 *port);
+        void setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port);
 
     protected:
         void closeEvent(QCloseEvent *)override;
@@ -29,8 +30,7 @@ class MainWindowDepuracionUDP : public QMainWindow
         bool captureEnable = false;
 
         QUdpSocket *udpSocket = nullptr;
-        bool *isConectedUdp = nullptr;
-        QHostAddress *address = nullptr;
+        QHostAddress *ip = nullptr;
         quint16 *port = nullptr;
 
         void readData();

@@ -3,6 +3,7 @@
 
 #include <QDialog>
 
+#include <QUdpSocket>
 #include <QHostAddress>
 
 namespace Ui {class DialogConectarUDP;}
@@ -15,14 +16,14 @@ class DialogConectarUDP : public QDialog
         explicit DialogConectarUDP(QWidget *parent = nullptr);
         ~DialogConectarUDP();
 
-        void setUdpSocket(bool *isConectUdp, QHostAddress *address, quint16 *port);
+        void setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port);
 
     private:
         Ui::DialogConectarUDP *ui;
 
-        bool *isConectUdp;
-        QHostAddress *address;
-        quint16 *port;
+        QUdpSocket *udpSocket = nullptr;
+        QHostAddress *ip = nullptr;
+        quint16 *port = nullptr;
 
         void closeEvent(QCloseEvent *)override;
 

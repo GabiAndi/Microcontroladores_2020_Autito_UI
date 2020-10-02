@@ -32,6 +32,8 @@ void DialogConectarUSB::setSerialPort(QSerialPort *serialPort)
 
 void DialogConectarUSB::on_pushButtonActualizarPuertos_clicked()
 {
+    ui->comboBoxPuertos->clear();
+
     for (QSerialPortInfo port : QSerialPortInfo::availablePorts())
     {
         ui->comboBoxPuertos->addItem(port.portName());
