@@ -35,16 +35,16 @@ void WidgetPanel::paintEvent(QPaintEvent *)
 
     // Dibujo de los valores de los sensores
     // Sensores laterales
-    painter.drawText(-410, 110, "1023");
-    painter.drawText(320, 110, "1023");
+    painter.drawText(-410, 110, QString::asprintf("%u", sensor1Value));
+    painter.drawText(320, 110, QString::asprintf("%u", sensor2Value));
 
     // Sensores frontales laterales
-    painter.drawText(-290, -60, "1023");
-    painter.drawText(200, -60, "1023");
+    painter.drawText(-290, -60, QString::asprintf("%u", sensor3Value));
+    painter.drawText(200, -60, QString::asprintf("%u", sensor4Value));
 
     // Sensores frontales cruzados
-    painter.drawText(-130, -150, "1023");
-    painter.drawText(60, -150, "1023");
+    painter.drawText(-130, -150, QString::asprintf("%u", sensor5Value));
+    painter.drawText(60, -150, QString::asprintf("%u", sensor6Value));
 
     // Bateria
     font.setPointSize(38);
@@ -53,4 +53,46 @@ void WidgetPanel::paintEvent(QPaintEvent *)
     painter.drawText(-45, 360, "85\%");
 
     font.setPointSize(22);
+}
+
+void WidgetPanel::setSensor1Value(uint16_t sensor1Value)
+{
+    this->sensor1Value = sensor1Value;
+
+    update();
+}
+
+void WidgetPanel::setSensor2Value(uint16_t sensor2Value)
+{
+    this->sensor2Value = sensor2Value;
+
+    update();
+}
+
+void WidgetPanel::setSensor3Value(uint16_t sensor3Value)
+{
+    this->sensor3Value = sensor3Value;
+
+    update();
+}
+
+void WidgetPanel::setSensor4Value(uint16_t sensor4Value)
+{
+    this->sensor4Value = sensor4Value;
+
+    update();
+}
+
+void WidgetPanel::setSensor5Value(uint16_t sensor5Value)
+{
+    this->sensor5Value = sensor5Value;
+
+    update();
+}
+
+void WidgetPanel::setSensor6Value(uint16_t sensor6Value)
+{
+    this->sensor6Value = sensor6Value;
+
+    update();
 }

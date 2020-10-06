@@ -24,6 +24,7 @@ void DialogConectarUSB::setSerialPort(QSerialPort *serialPort)
 
     if (serialPort->isOpen())
     {
+        ui->comboBoxPuertos->addItem(this->serialPort->portName());
         ui->comboBoxPuertos->setEnabled(false);
         ui->pushButtonActualizarPuertos->setEnabled(false);
         ui->pushButtonConectar->setText("Desconectar");

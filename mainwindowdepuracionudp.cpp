@@ -30,48 +30,39 @@ void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *
     this->udpSocket = udpSocket;
     this->ip = ip;
     this->port = port;
-
-    connect(udpSocket, &QUdpSocket::readyRead, this, &MainWindowDepuracionUDP::readData);
 }
 
 void MainWindowDepuracionUDP::closeEvent(QCloseEvent *)
 {
-    disconnect(udpSocket, &QUdpSocket::readyRead, this, &MainWindowDepuracionUDP::readData);
+    emit(closeSignal());
 
     deleteLater();
 }
 
-void MainWindowDepuracionUDP::readData()
+void MainWindowDepuracionUDP::readData(QByteArray dataRead)
 {
-    while (udpSocket->hasPendingDatagrams())
+    if (captureEnable)
     {
-        QNetworkDatagram datagram = udpSocket->receiveDatagram();
-
-        QByteArray dataRead = datagram.data();
-
-        if (captureEnable)
+        for (uint8_t data : dataRead)
         {
-            for (uint8_t data : dataRead)
+            ui->tableWidgetDatosRecibidos->insertRow(ui->tableWidgetDatosRecibidos->rowCount());
+
+            if (data < 0x10)
             {
-                ui->tableWidgetDatosRecibidos->insertRow(ui->tableWidgetDatosRecibidos->rowCount());
-
-                if (data < 0x10)
-                {
-                    ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
-                                                           new QTableWidgetItem(QString::asprintf("0%x", data)));
-                }
-
-                else
-                {
-                    ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
-                                                           new QTableWidgetItem(QString::asprintf("%x", data)));
-                }
-
-                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 1,
-                                                       new QTableWidgetItem(QString::asprintf("%c", data)));
-                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 2,
-                                                       new QTableWidgetItem(QString::asprintf("%d", data)));
+                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
+                                                       new QTableWidgetItem(QString::asprintf("0%x", data)));
             }
+
+            else
+            {
+                ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 0,
+                                                       new QTableWidgetItem(QString::asprintf("%x", data)));
+            }
+
+            ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 1,
+                                                   new QTableWidgetItem(QString::asprintf("%c", data)));
+            ui->tableWidgetDatosRecibidos->setItem(ui->tableWidgetDatosRecibidos->rowCount() - 1, 2,
+                                                   new QTableWidgetItem(QString::asprintf("%d", data)));
         }
     }
 }

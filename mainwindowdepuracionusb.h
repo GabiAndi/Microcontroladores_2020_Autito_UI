@@ -22,6 +22,8 @@ class MainWindowDepuracionUSB : public QMainWindow
 
         void setSerialPort(QSerialPort *serialPort);
 
+        void readData(QByteArray dataRead);
+
     protected:
         void closeEvent(QCloseEvent *)override;
 
@@ -32,7 +34,8 @@ class MainWindowDepuracionUSB : public QMainWindow
 
         bool captureEnable = false;
 
-        void readData();
+    signals:
+        void closeSignal();
 
     private slots:
         void on_pushButtonLimpiar_clicked();

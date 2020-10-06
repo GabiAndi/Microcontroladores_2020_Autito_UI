@@ -28,7 +28,7 @@ MainWindowDepuracionUSB::~MainWindowDepuracionUSB()
 
 void MainWindowDepuracionUSB::closeEvent(QCloseEvent *)
 {
-    disconnect(serialPort, &QSerialPort::readyRead, this, &MainWindowDepuracionUSB::readData);
+    emit(closeSignal());
 
     deleteLater();
 }
@@ -36,14 +36,10 @@ void MainWindowDepuracionUSB::closeEvent(QCloseEvent *)
 void MainWindowDepuracionUSB::setSerialPort(QSerialPort *serialPort)
 {
     this->serialPort = serialPort;
-
-    connect(this->serialPort, &QSerialPort::readyRead, this, &MainWindowDepuracionUSB::readData);
 }
 
-void MainWindowDepuracionUSB::readData()
+void MainWindowDepuracionUSB::readData(QByteArray dataRead)
 {
-    QByteArray dataRead = serialPort->readAll();
-
     if (captureEnable)
     {
         for (uint8_t data : dataRead)
