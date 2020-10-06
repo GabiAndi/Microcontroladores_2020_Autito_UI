@@ -1,0 +1,5 @@
+<RCC>
+    <qresource prefix="/">
+        <file>src/graphics/Autito.png</file>
+    </qresource>
+</RCC>

@@ -6,6 +6,8 @@
 #include <QPainter>
 #include <QBrush>
 #include <QPen>
+#include <QPixmap>
+#include <QFont>
 
 class WidgetPanel : public QWidget
 {
