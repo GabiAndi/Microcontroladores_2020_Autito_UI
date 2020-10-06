@@ -8,7 +8,16 @@ MainWindowDepuracionUDP::MainWindowDepuracionUDP(QWidget *parent) :
     ui->setupUi(this);
 
     // Comandos
+    ui->comboBoxComandos->addItem("C0 | Envio de datos del ADC");
+    ui->comboBoxComandos->addItem("D0 | Setea el SSID");
+    ui->comboBoxComandos->addItem("D1 | Setea la contraseña");
+    ui->comboBoxComandos->addItem("D2 | Setea la ip del autito");
+    ui->comboBoxComandos->addItem("D3 | Setea la ip de la PC terminal");
+    ui->comboBoxComandos->addItem("D4 | Setea el puerto de comunicación");
+    ui->comboBoxComandos->addItem("D5 | Guarda los datos de la RAM en la FLASH");
     ui->comboBoxComandos->addItem("F0 | Alive");
+    ui->comboBoxComandos->addItem("F2 | Enviar comando AT");
+    ui->comboBoxComandos->addItem("F3 | Enviar datos a ESP");
 }
 
 MainWindowDepuracionUDP::~MainWindowDepuracionUDP()
@@ -129,15 +138,7 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
 
     else
     {
-        if (ui->checkBoxNLCR->isChecked())
-        {
-            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length() + 2));
-        }
-
-        else
-        {
-            data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
-        }
+        data.append((uint8_t)(ui->plainTextEditPayload->toPlainText().length()));
     }
 
     data.append((uint8_t)(':'));
@@ -175,12 +176,6 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
         for (QChar byte : ui->plainTextEditPayload->toPlainText())
         {
             data.append((uint8_t)(byte.toLatin1()));
-        }
-
-        if (ui->checkBoxNLCR->isChecked())
-        {
-            data.append('\r');
-            data.append('\n');
         }
     }
 
