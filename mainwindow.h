@@ -7,6 +7,8 @@
 #include <QUdpSocket>
 #include <QNetworkDatagram>
 #include <QTimer>
+#include <QFile>
+#include <QTextStream>
 
 #include <stdint.h>
 
@@ -26,6 +28,9 @@ class MainWindow : public QMainWindow
     public:
         MainWindow(QWidget *parent = nullptr);
         ~MainWindow();
+
+    protected:
+        void closeEvent(QCloseEvent *)override;
 
     private:
         Ui::MainWindow *ui;
@@ -98,6 +103,9 @@ class MainWindow : public QMainWindow
 
         QTimer *timerUSBReadTimeOut = nullptr;
         QTimer *timerUDPReadTimeOut = nullptr;
+
+        QFile *log = nullptr;
+        QFile *adcData = nullptr;
 
         void readDataUSB();
         void readDataUDP();

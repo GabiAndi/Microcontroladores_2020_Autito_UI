@@ -34,6 +34,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     timerUDPReadTimeOut = new QTimer(this);
     connect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
+
+    // Inicializacion de los archivos
+    // Archivo de logs del sistema
+    log = new QFile("log.txt");
+    log->open(QIODevice::ReadWrite);
+
+    // Archivo de datos del ADC
+    adcData = new QFile("adc.csv");
+    adcData->open(QIODevice::ReadWrite);
+    adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
 }
 
 MainWindow::~MainWindow()
@@ -47,7 +57,16 @@ MainWindow::~MainWindow()
     delete serialPort;
     delete udpSocket;
 
+    delete log;
+    delete adcData;
+
     delete ui;
+}
+
+void MainWindow::closeEvent(QCloseEvent *)
+{
+    log->close();
+    adcData->close();
 }
 
 void MainWindow::mainWindowDepuracionUSBClose()
@@ -177,11 +196,15 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
 
+                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                     // Sensor 2
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 3];
                                     byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 4];
 
                                     ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
+
+                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
 
                                     // Sensor 3
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 5];
@@ -189,11 +212,15 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
 
+                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                     // Sensor 4
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 7];
                                     byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 8];
 
                                     ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
+
+                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
 
                                     // Sensor 5
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 9];
@@ -201,11 +228,15 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
 
+                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                     // Sensor 6
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 11];
                                     byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 12];
 
                                     ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
+
+                                    adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
 
                                     break;
 
@@ -356,11 +387,15 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
 
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                         // Sensor 2
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 3];
                                         byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 4];
 
                                         ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
+
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
 
                                         // Sensor 3
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 5];
@@ -368,11 +403,15 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
 
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                         // Sensor 4
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 7];
                                         byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 8];
 
                                         ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
+
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
 
                                         // Sensor 5
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 9];
@@ -380,11 +419,15 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
 
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+
                                         // Sensor 6
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 11];
                                         byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 12];
 
                                         ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
+
+                                        adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
 
                                         break;
 
