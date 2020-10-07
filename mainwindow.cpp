@@ -38,12 +38,18 @@ MainWindow::MainWindow(QWidget *parent)
     // Inicializacion de los archivos
     // Archivo de logs del sistema
     log = new QFile("log.txt");
-    log->open(QIODevice::ReadWrite);
+
+    if (!log->open(QIODevice::ReadWrite))
+    {
+        QMessageBox(QMessageBox::Icon::Warning, "Error al abrir el archivo", "No se pudo crear el archivo del log de sistema",
+                    QMessageBox::Button::Ok, this).exec();
+    }
 
     // Archivo de datos del ADC
-    adcData = new QFile("adc.csv");
-    adcData->open(QIODevice::ReadWrite);
-    adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
+    adcData = new QFile();
+
+    // Se crea los graficos
+    createChartADC();
 }
 
 MainWindow::~MainWindow()
@@ -60,13 +66,30 @@ MainWindow::~MainWindow()
     delete log;
     delete adcData;
 
+    delete adc1Spline;
+    delete adc2Spline;
+    delete adc3Spline;
+    delete adc4Spline;
+    delete adc5Spline;
+    delete adc6Spline;
+    delete adcChart;
+    delete adcChartView;
+    delete adcLayout;
+
     delete ui;
 }
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
-    log->close();
-    adcData->close();
+    if (log->isOpen())
+    {
+        log->close();
+    }
+
+    if (adcData->isOpen())
+    {
+        adcData->close();
+    }
 }
 
 void MainWindow::mainWindowDepuracionUSBClose()
@@ -196,7 +219,12 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC1(byte_translate.u16[0]);
 
                                     // Sensor 2
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 3];
@@ -204,7 +232,12 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC2(byte_translate.u16[0]);
 
                                     // Sensor 3
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 5];
@@ -212,7 +245,12 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC3(byte_translate.u16[0]);
 
                                     // Sensor 4
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 7];
@@ -220,7 +258,12 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC4(byte_translate.u16[0]);
 
                                     // Sensor 5
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 9];
@@ -228,7 +271,12 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC5(byte_translate.u16[0]);
 
                                     // Sensor 6
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 11];
@@ -236,7 +284,14 @@ void MainWindow::readDataUSB()
 
                                     ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
 
-                                    adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
+                                    if (adcData->isOpen())
+                                    {
+                                        adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
+                                    }
+
+                                    addPointChartADC6(byte_translate.u16[0]);
+
+                                    refreshChartADC();
 
                                     break;
 
@@ -387,7 +442,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC1(byte_translate.u16[0]);
 
                                         // Sensor 2
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 3];
@@ -395,7 +455,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC2(byte_translate.u16[0]);
 
                                         // Sensor 3
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 5];
@@ -403,7 +468,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC3(byte_translate.u16[0]);
 
                                         // Sensor 4
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 7];
@@ -411,7 +481,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC4(byte_translate.u16[0]);
 
                                         // Sensor 5
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 9];
@@ -419,7 +494,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC5(byte_translate.u16[0]);
 
                                         // Sensor 6
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 11];
@@ -427,7 +507,12 @@ void MainWindow::readDataUDP()
 
                                         ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
 
-                                        adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
+                                        if (adcData->isOpen())
+                                        {
+                                            adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
+                                        }
+
+                                        addPointChartADC6(byte_translate.u16[0]);
 
                                         break;
 
@@ -609,4 +694,272 @@ void MainWindow::on_pushButtonCapturaDatosADC_clicked()
 void MainWindow::on_horizontalSliderTiempoDeCaptura_valueChanged(int value)
 {
     ui->labelTiempoCapturaADC->setText(QString::asprintf("%u ms", value));
+}
+
+void MainWindow::on_checkBox_stateChanged(int arg1)
+{
+    // No esta check
+    if (arg1 == 0)
+    {
+        if (adcData->isOpen())
+        {
+            adcData->close();
+        }
+    }
+
+    else
+    {
+        QString fileName;
+
+        QDate date = QDateTime::currentDateTime().date();
+        QTime time = QDateTime::currentDateTime().time();
+
+        if (!QDir("adc").exists())
+        {
+            QDir().mkdir("adc");
+        }
+
+        fileName.append(QString::asprintf("adc/"));
+
+        fileName.append(QString::asprintf("%i", date.year()));
+
+        if (date.month() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.month()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.month()));
+        }
+
+        if (date.day() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.day()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.day()));
+        }
+
+        if (time.hour() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.hour()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.hour()));
+        }
+
+        if (time.minute() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.minute()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.minute()));
+        }
+
+        if (time.second() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.second()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.second()));
+        }
+
+        fileName.append(".csv");
+
+        adcData->setFileName(fileName);
+
+        if (adcData->open(QIODevice::ReadWrite))
+        {
+            adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
+        }
+
+        else
+        {
+            QMessageBox(QMessageBox::Icon::Warning, "Error al abrir el archivo", "No se pudo crear el archivo del adc de sistema",
+                        QMessageBox::Button::Ok, this).exec();
+        }
+    }
+}
+
+void MainWindow::createChartADC()
+{
+    adc1Spline = new QSplineSeries();
+    adc2Spline = new QSplineSeries();
+    adc3Spline = new QSplineSeries();
+    adc4Spline = new QSplineSeries();
+    adc5Spline = new QSplineSeries();
+    adc6Spline = new QSplineSeries();
+
+    for (int i = 0 ; i <= 30 ; i++)
+    {
+        adc1Datos.append(QPointF(i, 0));
+        adc2Datos.append(QPointF(i, 0));
+        adc3Datos.append(QPointF(i, 0));
+        adc4Datos.append(QPointF(i, 0));
+        adc5Datos.append(QPointF(i, 0));
+        adc6Datos.append(QPointF(i, 0));
+    }
+
+    adc1Spline->append(adc1Datos);
+    adc2Spline->append(adc2Datos);
+    adc3Spline->append(adc3Datos);
+    adc4Spline->append(adc4Datos);
+    adc5Spline->append(adc5Datos);
+    adc6Spline->append(adc6Datos);
+
+    adcChart = new QChart();
+
+    adcChart->setTitle("Valores del ADC");
+    adcChart->legend()->hide();
+
+    adcChart->addSeries(adc1Spline);
+    adcChart->addSeries(adc2Spline);
+    adcChart->addSeries(adc3Spline);
+    adcChart->addSeries(adc4Spline);
+    adcChart->addSeries(adc5Spline);
+    adcChart->addSeries(adc6Spline);
+
+    adcChart->createDefaultAxes();
+    adcChart->axes(Qt::Vertical).first()->setRange(0, 4096);
+    adcChart->axes(Qt::Horizontal).first()->setRange(0, 30);
+
+    adcChartView = new QChartView(adcChart);
+
+    adcChartView->setRenderHint(QPainter::Antialiasing);
+
+    adcLayout = new QGridLayout();
+
+    adcLayout->addWidget(adcChartView, 0, 0);
+
+    ui->widgetAdc->setLayout(adcLayout);
+}
+
+void MainWindow::refreshChartADC()
+{
+    // Se borra la memoria asignada
+    delete adc1Spline;
+    delete adc2Spline;
+    delete adc3Spline;
+    delete adc4Spline;
+    delete adc5Spline;
+    delete adc6Spline;
+    delete adcChart;
+    delete adcChartView;
+    delete adcLayout;
+
+    // Se añade el dato recibido
+    adc1Spline = new QSplineSeries();
+    adc2Spline = new QSplineSeries();
+    adc3Spline = new QSplineSeries();
+    adc4Spline = new QSplineSeries();
+    adc5Spline = new QSplineSeries();
+    adc6Spline = new QSplineSeries();
+
+    adc1Spline->append(adc1Datos);
+    adc2Spline->append(adc2Datos);
+    adc3Spline->append(adc3Datos);
+    adc4Spline->append(adc4Datos);
+    adc5Spline->append(adc5Datos);
+    adc6Spline->append(adc6Datos);
+
+    adcChart = new QChart();
+
+    adcChart->setTitle("Valores del ADC");
+    adcChart->legend()->hide();
+
+    adcChart->addSeries(adc1Spline);
+    adcChart->addSeries(adc2Spline);
+    adcChart->addSeries(adc3Spline);
+    adcChart->addSeries(adc4Spline);
+    adcChart->addSeries(adc5Spline);
+    adcChart->addSeries(adc6Spline);
+
+    adcChart->createDefaultAxes();
+    adcChart->axes(Qt::Vertical).first()->setRange(0, 4096);
+    adcChart->axes(Qt::Horizontal).first()->setRange(0, 30);
+
+    adcChartView = new QChartView(adcChart);
+
+    adcChartView->setRenderHint(QPainter::Antialiasing);
+
+    adcLayout = new QGridLayout();
+
+    adcLayout->addWidget(adcChartView, 0, 0);
+
+    ui->widgetAdc->setLayout(adcLayout);
+}
+
+void MainWindow::addPointChartADC1(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc1Datos.replace(i, QPointF(i, adc1Datos.value(i + 1).ry()));
+    }
+
+    adc1Datos.removeLast();
+    adc1Datos.append(QPointF(30, point * 1.0));
+}
+
+void MainWindow::addPointChartADC2(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc2Datos.replace(i, QPointF(i, adc2Datos.value(i + 1).ry()));
+    }
+
+    adc2Datos.removeLast();
+    adc2Datos.append(QPointF(30, point * 1.0));
+}
+
+void MainWindow::addPointChartADC3(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc3Datos.replace(i, QPointF(i, adc3Datos.value(i + 1).ry()));
+    }
+
+    adc3Datos.removeLast();
+    adc3Datos.append(QPointF(30, point * 1.0));
+}
+
+void MainWindow::addPointChartADC4(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc4Datos.replace(i, QPointF(i, adc4Datos.value(i + 1).ry()));
+    }
+
+    adc4Datos.removeLast();
+    adc4Datos.append(QPointF(30, point * 1.0));
+}
+
+void MainWindow::addPointChartADC5(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc5Datos.replace(i, QPointF(i, adc5Datos.value(i + 1).ry()));
+    }
+
+    adc5Datos.removeLast();
+    adc5Datos.append(QPointF(30, point * 1.0));
+}
+
+void MainWindow::addPointChartADC6(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        adc6Datos.replace(i, QPointF(i, adc6Datos.value(i + 1).ry()));
+    }
+
+    adc6Datos.removeLast();
+    adc6Datos.append(QPointF(30, point * 1.0));
 }

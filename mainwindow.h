@@ -9,6 +9,14 @@
 #include <QTimer>
 #include <QFile>
 #include <QTextStream>
+#include <QTime>
+#include <QDateTime>
+#include <QDir>
+#include <QtCharts>
+#include <QSplineSeries>
+#include <QChartView>
+#include <QGridLayout>
+#include <QList>
 
 #include <stdint.h>
 
@@ -107,6 +115,24 @@ class MainWindow : public QMainWindow
         QFile *log = nullptr;
         QFile *adcData = nullptr;
 
+        // Grafico clapeta
+        QSplineSeries *adc1Spline;
+        QSplineSeries *adc2Spline;
+        QSplineSeries *adc3Spline;
+        QSplineSeries *adc4Spline;
+        QSplineSeries *adc5Spline;
+        QSplineSeries *adc6Spline;
+        QChart *adcChart;
+        QChartView *adcChartView;
+        QGridLayout *adcLayout;
+
+        QList<QPointF> adc1Datos;
+        QList<QPointF> adc2Datos;
+        QList<QPointF> adc3Datos;
+        QList<QPointF> adc4Datos;
+        QList<QPointF> adc5Datos;
+        QList<QPointF> adc6Datos;
+
         void readDataUSB();
         void readDataUDP();
 
@@ -114,6 +140,17 @@ class MainWindow : public QMainWindow
         void timeOutReadUDP();
 
         uint8_t checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength);
+
+        void createChartADC();
+
+        void refreshChartADC();
+
+        void addPointChartADC1(uint16_t point);
+        void addPointChartADC2(uint16_t point);
+        void addPointChartADC3(uint16_t point);
+        void addPointChartADC4(uint16_t point);
+        void addPointChartADC5(uint16_t point);
+        void addPointChartADC6(uint16_t point);
 
     public slots:
         void mainWindowDepuracionUSBClose();
@@ -126,5 +163,6 @@ class MainWindow : public QMainWindow
         void on_actionUDP_2_triggered();
         void on_pushButtonCapturaDatosADC_clicked();
         void on_horizontalSliderTiempoDeCaptura_valueChanged(int value);
+        void on_checkBox_stateChanged(int arg1);
 };
 #endif // MAINWINDOW_H
