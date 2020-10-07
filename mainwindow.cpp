@@ -554,3 +554,59 @@ void MainWindow::on_actionUDP_2_triggered()
     dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
     dialogConectarUDP->show();
 }
+
+void MainWindow::on_pushButtonCapturaDatosADC_clicked()
+{
+    QByteArray data;
+    uint8_t checksum = 0;
+
+    data.append((uint8_t)('U'));
+    data.append((uint8_t)('N'));
+    data.append((uint8_t)('E'));
+    data.append((uint8_t)('R'));
+    data.append((uint8_t)(2));
+    data.append((uint8_t)(':'));
+
+    data.append((uint8_t)(0xC0));
+
+    if (ui->pushButtonCapturaDatosADC->text() == "Capturar ADC")
+    {
+        ui->pushButtonCapturaDatosADC->setText("Detener ADC");
+
+        data.append((uint8_t)(0xFF));
+    }
+
+    else if (ui->pushButtonCapturaDatosADC->text() == "Detener ADC")
+    {
+        ui->pushButtonCapturaDatosADC->setText("Capturar ADC");
+
+        data.append((uint8_t)(0x00));
+    }
+
+    data.append((uint8_t)(ui->horizontalSliderTiempoDeCaptura->value()));
+
+    for (char byte : data)
+    {
+        checksum ^= (uint8_t)(byte);
+    }
+
+    data.append(checksum);
+
+    if (serialPort->isOpen())
+    {
+        serialPort->write(data);
+    }
+
+    else if (udpSocket->isOpen())
+    {
+        data.append('\r');
+        data.append('\n');
+
+        udpSocket->writeDatagram(data, ip, port);
+    }
+}
+
+void MainWindow::on_horizontalSliderTiempoDeCaptura_valueChanged(int value)
+{
+    ui->labelTiempoCapturaADC->setText(QString::asprintf("%u ms", value));
+}

@@ -124,5 +124,7 @@ class MainWindow : public QMainWindow
         void on_actionUDP_triggered();
         void on_actionUSB_2_triggered();
         void on_actionUDP_2_triggered();
+        void on_pushButtonCapturaDatosADC_clicked();
+        void on_horizontalSliderTiempoDeCaptura_valueChanged(int value);
 };
 #endif // MAINWINDOW_H
