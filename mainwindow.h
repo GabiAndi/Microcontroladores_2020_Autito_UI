@@ -17,6 +17,8 @@
 #include <QChartView>
 #include <QGridLayout>
 #include <QList>
+#include <QInputDialog>
+#include <QDialog>
 
 #include <stdint.h>
 
@@ -150,6 +152,8 @@ class MainWindow : public QMainWindow
         void addPointChartADC4(uint16_t point);
         void addPointChartADC5(uint16_t point);
 
+        void sendCMD(QByteArray sendData);
+
     public slots:
         void mainWindowDepuracionUSBClose();
         void mainWindowDepuracionUDPClose();
@@ -162,5 +166,6 @@ class MainWindow : public QMainWindow
         void on_pushButtonCapturaDatosADC_clicked();
         void on_horizontalSliderTiempoDeCaptura_valueChanged(int value);
         void on_checkBox_stateChanged(int arg1);
+        void on_pushButtonConfigurarWiFi_clicked();
 };
 #endif // MAINWINDOW_H

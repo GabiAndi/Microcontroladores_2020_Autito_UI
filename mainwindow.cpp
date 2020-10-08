@@ -641,16 +641,8 @@ void MainWindow::on_actionUDP_2_triggered()
 void MainWindow::on_pushButtonCapturaDatosADC_clicked()
 {
     QByteArray data;
-    uint8_t checksum = 0;
 
-    data.append((uint8_t)('U'));
-    data.append((uint8_t)('N'));
-    data.append((uint8_t)('E'));
-    data.append((uint8_t)('R'));
-    data.append((uint8_t)(2));
-    data.append((uint8_t)(':'));
-
-    data.append((uint8_t)(0xC0));
+    data.append(0xC0);
 
     if (ui->pushButtonCapturaDatosADC->text() == "Capturar ADC")
     {
@@ -668,25 +660,7 @@ void MainWindow::on_pushButtonCapturaDatosADC_clicked()
 
     data.append((uint8_t)(ui->horizontalSliderTiempoDeCaptura->value()));
 
-    for (char byte : data)
-    {
-        checksum ^= (uint8_t)(byte);
-    }
-
-    data.append(checksum);
-
-    if (serialPort->isOpen())
-    {
-        serialPort->write(data);
-    }
-
-    else if (udpSocket->isOpen())
-    {
-        data.append('\r');
-        data.append('\n');
-
-        udpSocket->writeDatagram(data, ip, port);
-    }
+    sendCMD(data);
 }
 
 void MainWindow::on_horizontalSliderTiempoDeCaptura_valueChanged(int value)
@@ -931,4 +905,160 @@ void MainWindow::addPointChartADC5(uint16_t point)
 
     adc5Spline->clear();
     adc5Spline->append(adc5Datos);
+}
+
+void MainWindow::sendCMD(QByteArray sendData)
+{
+    QByteArray data;
+    uint8_t checksum = 0;
+
+    data.append('U');
+    data.append('N');
+    data.append('E');
+    data.append('R');
+    data.append(sendData.length() - 1);
+    data.append(':');
+
+    data.append(sendData);
+
+    for (char byte : data)
+    {
+        checksum ^= (uint8_t)(byte);
+    }
+
+    data.append(checksum);
+
+    if (serialPort->isOpen())
+    {
+        serialPort->write(data);
+    }
+
+    else if (udpSocket->isOpen())
+    {
+        data.append('\r');
+        data.append('\n');
+
+        udpSocket->writeDatagram(data, ip, port);
+    }
+}
+
+void MainWindow::on_pushButtonConfigurarWiFi_clicked()
+{
+    bool ok;
+
+    QString ssid;
+    QString psw;
+
+    QString ipMcu;
+    QString ipPc;
+    QString port;
+
+    // Para el SSID
+    ssid = QInputDialog::getText(this, "Parámetros de conexión", "Escriba el SSID", QLineEdit::EchoMode::Normal, "", &ok,
+                           Qt::WindowCloseButtonHint);
+
+    if (ok && !ssid.isEmpty())
+    {
+        QByteArray data;
+
+        data.append(0xD0);
+
+        data.append(ssid.length());
+
+        data.append(ssid.toLatin1());
+
+        sendCMD(data);
+    }
+
+    // Para la contraseña
+    psw = QInputDialog::getText(this, "Parámetros de conexión", "Contraseña de " + ssid, QLineEdit::EchoMode::Normal, "", &ok,
+                           Qt::WindowCloseButtonHint);
+
+    if (ok && !psw.isEmpty())
+    {
+        QByteArray data;
+
+        data.append(0xD1);
+
+        data.append(psw.length());
+
+        data.append(psw.toLatin1());
+
+        sendCMD(data);
+    }
+
+    // Para la ip del mcu
+    ipMcu = QInputDialog::getText(this, "Parámetros de conexión", "IP para el autito", QLineEdit::EchoMode::Normal, "", &ok,
+                           Qt::WindowCloseButtonHint);
+
+    if (ok && !ipMcu.isEmpty())
+    {
+        QByteArray data;
+
+        data.append(0xD2);
+
+        data.append(ipMcu.length());
+
+        data.append(ipMcu.toLatin1());
+
+        sendCMD(data);
+    }
+
+    // Para la ip de la pc
+    ipPc = QInputDialog::getText(this, "Parámetros de conexión", "IP para la PC", QLineEdit::EchoMode::Normal, "", &ok,
+                           Qt::WindowCloseButtonHint);
+
+    if (ok && !ipPc.isEmpty())
+    {
+        QByteArray data;
+
+        data.append(0xD3);
+
+        data.append(ipPc.length());
+
+        data.append(ipPc.toLatin1());
+
+        sendCMD(data);
+    }
+
+    // Puerto de comunicacion
+    port = QInputDialog::getText(this, "Parámetros de conexión", "Puerto de comunicación", QLineEdit::EchoMode::Normal, "", &ok,
+                           Qt::WindowCloseButtonHint);
+
+    if (ok && !port.isEmpty())
+    {
+        QByteArray data;
+
+        data.append(0xD4);
+
+        data.append(port.length());
+
+        data.append(port.toLatin1());
+
+        sendCMD(data);
+    }
+
+    // Se guardan los datos en la flash del micro
+    QMessageBox flashMsg;
+
+    flashMsg.setWindowTitle("Parámetros de conexión");
+    flashMsg.setText("¿Desea guardar datos en FLASH?");
+    flashMsg.setStandardButtons(QMessageBox::Button::No | QMessageBox::Button::Yes);
+    flashMsg.setDefaultButton(QMessageBox::Button::Yes);
+
+    int flash = flashMsg.exec();
+
+    switch (flash)
+    {
+        case QMessageBox::Button::Yes:
+            QByteArray data;
+
+            data.append(0xD5);
+
+            data.append(0xFF);
+
+            sendCMD(data);
+
+            break;
+    }
 }
