@@ -57,8 +57,15 @@ void DialogConectarUSB::on_pushButtonConectar_clicked()
 
         if (serialPort->open(QIODevice::ReadWrite))
         {
-            QMessageBox(QMessageBox::Icon::Information, "Conexión establecida", "Se conecto a " + serialPort->portName(),
-                        QMessageBox::Button::Ok, this).exec();
+            QMessageBox *messageBox = new QMessageBox(this);
+
+            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+            messageBox->setIcon(QMessageBox::Icon::Information);
+            messageBox->setWindowTitle("Conexión establecida");
+            messageBox->setText("Se conecto a " + serialPort->portName());
+            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+            messageBox->open();
 
             ui->comboBoxPuertos->setEnabled(false);
             ui->pushButtonActualizarPuertos->setEnabled(false);
@@ -67,8 +74,15 @@ void DialogConectarUSB::on_pushButtonConectar_clicked()
 
         else
         {
-            QMessageBox(QMessageBox::Icon::Critical, "Conexión erronea", "No se conecto a " + serialPort->portName(),
-                        QMessageBox::Button::Ok, this).exec();
+            QMessageBox *messageBox = new QMessageBox(this);
+
+            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+            messageBox->setIcon(QMessageBox::Icon::Information);
+            messageBox->setWindowTitle("Conexión erronea");
+            messageBox->setText("No se conecto a " + serialPort->portName());
+            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+            messageBox->open();
         }
     }
 

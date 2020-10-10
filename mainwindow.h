@@ -95,6 +95,13 @@ class MainWindow : public QMainWindow
             volatile uint8_t write_index;
         }buffer_write_udp_t;
 
+        enum SendTarget
+        {
+            SendALL = 0,
+            SendUSB = 1,
+            SendUDP = 2
+        };
+
         QSerialPort *serialPort = nullptr;
 
         QUdpSocket *udpSocket = nullptr;
@@ -154,7 +161,7 @@ class MainWindow : public QMainWindow
         void addPointChartADC4(uint16_t point);
         void addPointChartADC5(uint16_t point);
 
-        void sendCMD(QByteArray sendData);
+        void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
         void pingUDP();
 

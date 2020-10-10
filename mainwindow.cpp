@@ -41,8 +41,15 @@ MainWindow::MainWindow(QWidget *parent)
 
     if (!log->open(QIODevice::ReadWrite))
     {
-        QMessageBox(QMessageBox::Icon::Warning, "Error al abrir el archivo", "No se pudo crear el archivo del log de sistema",
-                    QMessageBox::Button::Ok, this).exec();
+        QMessageBox *messageBox = new QMessageBox(this);
+
+        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+        messageBox->setIcon(QMessageBox::Icon::Warning);
+        messageBox->setWindowTitle("Error al abrir el archivo");
+        messageBox->setText("No se pudo crear el archivo del log de sistema");
+        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+        messageBox->open();
     }
 
     // Archivo de datos del ADC
@@ -230,6 +237,35 @@ void MainWindow::readDataUSB()
                             // Analisis del comando recibido
                             switch (buffer_read_usb.data[buffer_read_usb.payload_init - 1])
                             {
+                                case 0xD5:
+                                    if (buffer_read_usb.data[buffer_read_usb.payload_init] == 0x00)
+                                    {
+                                        QMessageBox *messageBox = new QMessageBox(this);
+
+                                        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                        messageBox->setIcon(QMessageBox::Icon::Information);
+                                        messageBox->setWindowTitle("Parámetros de conexión");
+                                        messageBox->setText("Guardado en FLASH correcto");
+                                        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                        messageBox->open();
+                                    }
+
+                                    else
+                                    {
+                                        QMessageBox *messageBox = new QMessageBox(this);
+
+                                        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                        messageBox->setIcon(QMessageBox::Icon::Critical);
+                                        messageBox->setWindowTitle("Parámetros de conexión");
+                                        messageBox->setText("Guardado en FLASH erroneo");
+                                        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                        messageBox->open();
+                                    }
+
+                                    break;
+
                                 case 0xC0:  // Datos del ADC
                                     // Sensor 1
                                     byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 1];
@@ -451,6 +487,35 @@ void MainWindow::readDataUDP()
                                 // Analisis del comando recibido
                                 switch (buffer_read_udp.data[buffer_read_udp.payload_init - 1])
                                 {
+                                    case 0xD5:
+                                        if (buffer_read_udp.data[buffer_read_udp.payload_init] == 0x00)
+                                        {
+                                            QMessageBox *messageBox = new QMessageBox(this);
+
+                                            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                            messageBox->setIcon(QMessageBox::Icon::Information);
+                                            messageBox->setWindowTitle("Parámetros de conexión");
+                                            messageBox->setText("Guardado en FLASH correcto");
+                                            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                            messageBox->open();
+                                        }
+
+                                        else
+                                        {
+                                            QMessageBox *messageBox = new QMessageBox(this);
+
+                                            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                            messageBox->setIcon(QMessageBox::Icon::Critical);
+                                            messageBox->setWindowTitle("Parámetros de conexión");
+                                            messageBox->setText("Guardado en FLASH erroneo");
+                                            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                            messageBox->open();
+                                        }
+
+                                        break;
+
                                     case 0xC0:  // Datos del ADC
                                         // Sensor 1
                                         byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 1];
@@ -612,12 +677,19 @@ void MainWindow::on_actionUSB_triggered()
 
     else
     {
-        QMessageBox(QMessageBox::Icon::Warning, "Error al iniciar la depuración", "Primero conectese a un puerto serie",
-                    QMessageBox::Button::Ok, this).exec();
-
         dialogConectarUSB = new DialogConectarUSB(this);
         dialogConectarUSB->setSerialPort(serialPort);
         dialogConectarUSB->show();
+
+        QMessageBox *messageBox = new QMessageBox(this);
+
+        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+        messageBox->setIcon(QMessageBox::Icon::Warning);
+        messageBox->setWindowTitle("Error al iniciar la depuración");
+        messageBox->setText("Primero conectese a un puerto serie");
+        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+        messageBox->open();
     }
 }
 
@@ -634,12 +706,19 @@ void MainWindow::on_actionUDP_triggered()
 
     else
     {
-        QMessageBox(QMessageBox::Icon::Warning, "Error al iniciar la depuración", "Primero conectese a una dirección IP",
-                    QMessageBox::Button::Ok, this).exec();
-
         dialogConectarUDP = new DialogConectarUDP(this);
         dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
         dialogConectarUDP->show();
+
+        QMessageBox *messageBox = new QMessageBox(this);
+
+        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+        messageBox->setIcon(QMessageBox::Icon::Warning);
+        messageBox->setWindowTitle("Error al iniciar la depuración");
+        messageBox->setText("Primero conectese a una dirección IP");
+        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+        messageBox->open();
     }
 }
 
@@ -775,8 +854,15 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
 
         else
         {
-            QMessageBox(QMessageBox::Icon::Warning, "Error al abrir el archivo", "No se pudo crear el archivo del adc de sistema",
-                        QMessageBox::Button::Ok, this).exec();
+            QMessageBox *messageBox = new QMessageBox(this);
+
+            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+            messageBox->setIcon(QMessageBox::Icon::Warning);
+            messageBox->setWindowTitle("Error al abrir el archivo");
+            messageBox->setText("No se pudo crear el archivo del adc de sistema");
+            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+            messageBox->open();
         }
     }
 }
@@ -926,7 +1012,7 @@ void MainWindow::addPointChartADC5(uint16_t point)
     adc5Spline->append(adc5Datos);
 }
 
-void MainWindow::sendCMD(QByteArray sendData)
+void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
 {
     QByteArray data;
     uint8_t checksum = 0;
@@ -947,17 +1033,42 @@ void MainWindow::sendCMD(QByteArray sendData)
 
     data.append(checksum);
 
-    if (serialPort->isOpen())
+    switch (Target)
     {
-        serialPort->write(data);
-    }
+        case SendTarget::SendALL:
+            if (serialPort->isOpen())
+            {
+                serialPort->write(data);
+            }
 
-    else if (udpSocket->isOpen())
-    {
-        data.append('\r');
-        data.append('\n');
+            else if (udpSocket->isOpen())
+            {
+                data.append('\r');
+                data.append('\n');
 
-        udpSocket->writeDatagram(data, ip, port);
+                udpSocket->writeDatagram(data, ip, port);
+            }
+
+            break;
+
+        case SendTarget::SendUSB:
+            if (serialPort->isOpen())
+            {
+                serialPort->write(data);
+            }
+
+            break;
+
+        case SendTarget::SendUDP:
+            if (udpSocket->isOpen())
+            {
+                data.append('\r');
+                data.append('\n');
+
+                udpSocket->writeDatagram(data, ip, port);
+            }
+
+            break;
     }
 }
 
@@ -1135,7 +1246,7 @@ void MainWindow::checkStatusUDP()
 
         data.append(0xF0);
 
-        sendCMD(data);
+        sendCMD(data, SendTarget::SendUDP);
     }
 
     else
