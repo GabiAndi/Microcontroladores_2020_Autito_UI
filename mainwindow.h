@@ -19,6 +19,9 @@
 #include <QList>
 #include <QInputDialog>
 #include <QDialog>
+#include <QElapsedTimer>
+#include <QPalette>
+#include <QColor>
 
 #include <stdint.h>
 
@@ -98,6 +101,9 @@ class MainWindow : public QMainWindow
         QHostAddress ip;
         quint16 port;
 
+        QTimer *timerCheckStatusUDP = nullptr;
+        QElapsedTimer *timerPingUDP = nullptr;
+
         MainWindowDepuracionUSB *mainWindowDepuracionUSB = nullptr;
         MainWindowDepuracionUDP *mainWindowDepuracionUDP = nullptr;
         DialogConectarUSB *dialogConectarUSB = nullptr;
@@ -135,11 +141,7 @@ class MainWindow : public QMainWindow
         QList<QPointF> adc4Datos;
         QList<QPointF> adc5Datos;
 
-        void readDataUSB();
-        void readDataUDP();
-
-        void timeOutReadUSB();
-        void timeOutReadUDP();
+        uint8_t pingStatus;
 
         uint8_t checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength);
 
@@ -154,11 +156,21 @@ class MainWindow : public QMainWindow
 
         void sendCMD(QByteArray sendData);
 
+        void pingUDP();
+
     public slots:
         void mainWindowDepuracionUSBClose();
         void mainWindowDepuracionUDPClose();
 
     private slots:
+        void readDataUSB();
+        void readDataUDP();
+
+        void timeOutReadUSB();
+        void timeOutReadUDP();
+
+        void checkStatusUDP();
+
         void on_actionUSB_triggered();
         void on_actionUDP_triggered();
         void on_actionUSB_2_triggered();

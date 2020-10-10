@@ -33,7 +33,7 @@
        </sizepolicy>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <widget class="QWidget" name="tabPrincipal">
        <attribute name="title">
@@ -151,16 +151,16 @@
           </widget>
          </item>
          <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_6">
+          <layout class="QHBoxLayout" name="horizontalLayout_5">
            <item>
-            <widget class="QLabel" name="label_5">
+            <widget class="QLabel" name="label_4">
              <property name="text">
-              <string>SSID:</string>
+              <string>IP autito</string>
              </property>
             </widget>
            </item>
            <item>
-            <widget class="QLabel" name="labelSSID">
+            <widget class="QLabel" name="labelIPAutito">
              <property name="text">
               <string/>
              </property>
@@ -181,23 +181,6 @@
             </widget>
            </item>
            <item>
-            <spacer name="horizontalSpacer_3">
-             <property name="orientation">
-              <enum>Qt::Horizontal</enum>
-             </property>
-             <property name="sizeHint" stdset="0">
-              <size>
-               <width>40</width>
-               <height>20</height>
-              </size>
-             </property>
-            </spacer>
-           </item>
-          </layout>
-         </item>
-         <item>
-          <layout class="QHBoxLayout" name="horizontalLayout_5">
-           <item>
             <widget class="QLabel" name="label_2">
              <property name="text">
               <string>Latencia:</string>
@@ -206,34 +189,6 @@
            </item>
            <item>
             <widget class="QLabel" name="labelLatencia">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_3">
-             <property name="text">
-              <string>IP PC:</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="labelIPPC">
-             <property name="text">
-              <string/>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="label_4">
-             <property name="text">
-              <string>IP autito</string>
-             </property>
-            </widget>
-           </item>
-           <item>
-            <widget class="QLabel" name="labelIPAutito">
              <property name="text">
               <string/>
              </property>

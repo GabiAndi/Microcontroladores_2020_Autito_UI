@@ -50,6 +50,19 @@ MainWindow::MainWindow(QWidget *parent)
 
     // Se crea los graficos
     createChartADC();
+
+    // Timers de integridad de conexion
+    timerCheckStatusUDP = new QTimer(this);
+
+    connect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
+
+    timerCheckStatusUDP->start(1000);
+
+    timerPingUDP = new QElapsedTimer();
+
+    timerPingUDP->invalidate();
+
+    pingStatus = 0;
 }
 
 MainWindow::~MainWindow()
@@ -59,6 +72,8 @@ MainWindow::~MainWindow()
 
     disconnect(timerUSBReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUSB);
     disconnect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
+
+    disconnect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
 
     delete serialPort;
     delete udpSocket;
@@ -75,6 +90,9 @@ MainWindow::~MainWindow()
     delete adcChart;
     delete adcChartView;
     delete adcLayout;
+
+    delete timerCheckStatusUDP;
+    delete timerPingUDP;
 
     delete ui;
 }
@@ -515,6 +533,7 @@ void MainWindow::readDataUDP()
                                         break;
 
                                     case 0xF0:  // ALIVE
+                                        pingUDP();
 
                                         break;
 
@@ -1060,5 +1079,86 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
             sendCMD(data);
 
             break;
+    }
+}
+
+void MainWindow::checkStatusUDP()
+{
+    if (udpSocket->isOpen())
+    {
+        ui->labelEstadoUDP->setText("Conectado");
+        ui->labelIPAutito->setText(ip.toString());
+        ui->labelPuerto->setText(QString::number(port));
+
+        if (!timerPingUDP->isValid())
+        {
+            timerPingUDP->start();
+        }
+
+        if (timerPingUDP->elapsed() < 1000)
+        {
+            QPalette palette = ui->labelLatencia->palette();
+
+            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0x5C, 0xA8, 0x59, 0xFF));
+
+            ui->labelLatencia->setPalette(palette);
+        }
+
+        if (timerPingUDP->elapsed() >= 1000)
+        {
+            ui->labelLatencia->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
+
+            QPalette palette = ui->labelLatencia->palette();
+
+            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0xA5, 0xC8, 0x00, 0xFF));
+
+            ui->labelLatencia->setPalette(palette);
+        }
+
+        if (timerPingUDP->elapsed() >= 4000)
+        {
+            ui->labelLatencia->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
+
+            QPalette palette = ui->labelLatencia->palette();
+
+            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0xFF, 0x00, 0x00, 0xFF));
+
+            ui->labelLatencia->setPalette(palette);
+        }
+
+        if (timerPingUDP->elapsed() >= 15000)
+        {
+            udpSocket->close();
+        }
+
+        QByteArray data;
+
+        data.append(0xF0);
+
+        sendCMD(data);
+    }
+
+    else
+    {
+        ui->labelEstadoUDP->setText("Desconectado");
+
+        if (timerPingUDP->isValid())
+        {
+            timerPingUDP->invalidate();
+        }
+
+        ui->labelLatencia->setText("");
+        ui->labelIPAutito->setText("");
+        ui->labelPuerto->setText("");
+    }
+}
+
+void MainWindow::pingUDP()
+{
+    if (timerPingUDP->isValid())
+    {
+        ui->labelLatencia->setText(QString::number(timerPingUDP->restart()) + " ms");
+
+        timerPingUDP->invalidate();
     }
 }
