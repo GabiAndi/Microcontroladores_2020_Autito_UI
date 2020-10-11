@@ -57,6 +57,8 @@ class MainWindow : public QMainWindow
             volatile int8_t i8[4];
             volatile int16_t i16[2];
             volatile int32_t i32;
+
+            volatile float f;
         }byte_translate_u;
 
         typedef struct
@@ -111,6 +113,9 @@ class MainWindow : public QMainWindow
         QTimer *timerCheckStatusUDP = nullptr;
         QElapsedTimer *timerPingUDP = nullptr;
 
+        QTimer *timerCheckStatusUSB = nullptr;
+        QElapsedTimer *timerPingUSB = nullptr;
+
         MainWindowDepuracionUSB *mainWindowDepuracionUSB = nullptr;
         MainWindowDepuracionUDP *mainWindowDepuracionUDP = nullptr;
         DialogConectarUSB *dialogConectarUSB = nullptr;
@@ -148,8 +153,6 @@ class MainWindow : public QMainWindow
         QList<QPointF> adc4Datos;
         QList<QPointF> adc5Datos;
 
-        uint8_t pingStatus;
-
         uint8_t checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength);
 
         void createChartADC();
@@ -164,6 +167,7 @@ class MainWindow : public QMainWindow
         void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
         void pingUDP();
+        void pingUSB();
 
     public slots:
         void mainWindowDepuracionUSBClose();
@@ -177,6 +181,7 @@ class MainWindow : public QMainWindow
         void timeOutReadUDP();
 
         void checkStatusUDP();
+        void checkStatusUSB();
 
         void on_actionUSB_triggered();
         void on_actionUDP_triggered();
@@ -186,5 +191,6 @@ class MainWindow : public QMainWindow
         void on_horizontalSliderTiempoDeCaptura_valueChanged(int value);
         void on_checkBox_stateChanged(int arg1);
         void on_pushButtonConfigurarWiFi_clicked();
+        void on_pushButtonEnviarVelocidadMotor_clicked();
 };
 #endif // MAINWINDOW_H

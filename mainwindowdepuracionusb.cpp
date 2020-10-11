@@ -176,7 +176,10 @@ void MainWindowDepuracionUSB::on_pushButtonEnviar_clicked()
 
     data.append(checksum);
 
-    serialPort->write(data);
+    if (serialPort->isOpen())
+    {
+        serialPort->write(data);
+    }
 }
 
 void MainWindowDepuracionUSB::on_checkBoxCMD_stateChanged(int arg1)

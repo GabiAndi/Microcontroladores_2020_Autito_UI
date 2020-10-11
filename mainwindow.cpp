@@ -59,6 +59,7 @@ MainWindow::MainWindow(QWidget *parent)
     createChartADC();
 
     // Timers de integridad de conexion
+    // Para UDP
     timerCheckStatusUDP = new QTimer(this);
 
     connect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
@@ -69,7 +70,16 @@ MainWindow::MainWindow(QWidget *parent)
 
     timerPingUDP->invalidate();
 
-    pingStatus = 0;
+    // Para USB
+    timerCheckStatusUSB = new QTimer(this);
+
+    connect(timerCheckStatusUSB, &QTimer::timeout, this, &MainWindow::checkStatusUSB);
+
+    timerCheckStatusUSB->start(1000);
+
+    timerPingUSB = new QElapsedTimer();
+
+    timerPingUSB->invalidate();
 }
 
 MainWindow::~MainWindow()
@@ -81,6 +91,7 @@ MainWindow::~MainWindow()
     disconnect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
 
     disconnect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
+    disconnect(timerCheckStatusUSB, &QTimer::timeout, this, &MainWindow::checkStatusUSB);
 
     delete serialPort;
     delete udpSocket;
@@ -100,6 +111,7 @@ MainWindow::~MainWindow()
 
     delete timerCheckStatusUDP;
     delete timerPingUDP;
+    delete timerCheckStatusUSB;
 
     delete ui;
 }
@@ -348,6 +360,7 @@ void MainWindow::readDataUSB()
                                     break;
 
                                 case 0xF0:  // ALIVE
+                                    pingUSB();
 
                                     break;
 
@@ -1041,7 +1054,7 @@ void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
                 serialPort->write(data);
             }
 
-            else if (udpSocket->isOpen())
+            if (udpSocket->isOpen())
             {
                 data.append('\r');
                 data.append('\n');
@@ -1208,33 +1221,33 @@ void MainWindow::checkStatusUDP()
 
         if (timerPingUDP->elapsed() < 1000)
         {
-            QPalette palette = ui->labelLatencia->palette();
+            QPalette palette = ui->labelLatenciaUDP->palette();
 
-            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0x5C, 0xA8, 0x59, 0xFF));
+            palette.setColor(ui->labelLatenciaUDP->foregroundRole(), QColor(0x5C, 0xA8, 0x59, 0xFF));
 
-            ui->labelLatencia->setPalette(palette);
+            ui->labelLatenciaUDP->setPalette(palette);
         }
 
         if (timerPingUDP->elapsed() >= 1000)
         {
-            ui->labelLatencia->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
+            ui->labelLatenciaUDP->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
 
-            QPalette palette = ui->labelLatencia->palette();
+            QPalette palette = ui->labelLatenciaUDP->palette();
 
-            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0xA5, 0xC8, 0x00, 0xFF));
+            palette.setColor(ui->labelLatenciaUDP->foregroundRole(), QColor(0xA5, 0xC8, 0x00, 0xFF));
 
-            ui->labelLatencia->setPalette(palette);
+            ui->labelLatenciaUDP->setPalette(palette);
         }
 
         if (timerPingUDP->elapsed() >= 4000)
         {
-            ui->labelLatencia->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
+            ui->labelLatenciaUDP->setText("<" + QString::number(timerPingUDP->elapsed()) + " ms");
 
-            QPalette palette = ui->labelLatencia->palette();
+            QPalette palette = ui->labelLatenciaUDP->palette();
 
-            palette.setColor(ui->labelLatencia->foregroundRole(), QColor(0xFF, 0x00, 0x00, 0xFF));
+            palette.setColor(ui->labelLatenciaUDP->foregroundRole(), QColor(0xFF, 0x00, 0x00, 0xFF));
 
-            ui->labelLatencia->setPalette(palette);
+            ui->labelLatenciaUDP->setPalette(palette);
         }
 
         if (timerPingUDP->elapsed() >= 15000)
@@ -1258,7 +1271,7 @@ void MainWindow::checkStatusUDP()
             timerPingUDP->invalidate();
         }
 
-        ui->labelLatencia->setText("");
+        ui->labelLatenciaUDP->setText("");
         ui->labelIPAutito->setText("");
         ui->labelPuerto->setText("");
     }
@@ -1268,8 +1281,113 @@ void MainWindow::pingUDP()
 {
     if (timerPingUDP->isValid())
     {
-        ui->labelLatencia->setText(QString::number(timerPingUDP->restart()) + " ms");
+        ui->labelLatenciaUDP->setText(QString::number(timerPingUDP->restart()) + " ms");
 
         timerPingUDP->invalidate();
     }
+}
+
+void MainWindow::checkStatusUSB()
+{
+    if (serialPort->isOpen())
+    {
+        ui->labelEstadoUSB->setText("Conectado");
+
+        if (!timerPingUSB->isValid())
+        {
+            timerPingUSB->start();
+        }
+
+        if (timerPingUSB->elapsed() < 1000)
+        {
+            QPalette palette = ui->labelLatenciaUSB->palette();
+
+            palette.setColor(ui->labelLatenciaUSB->foregroundRole(), QColor(0x5C, 0xA8, 0x59, 0xFF));
+
+            ui->labelLatenciaUSB->setPalette(palette);
+        }
+
+        if (timerPingUSB->elapsed() >= 1000)
+        {
+            ui->labelLatenciaUSB->setText("<" + QString::number(timerPingUSB->elapsed()) + " ms");
+
+            QPalette palette = ui->labelLatenciaUSB->palette();
+
+            palette.setColor(ui->labelLatenciaUSB->foregroundRole(), QColor(0xA5, 0xC8, 0x00, 0xFF));
+
+            ui->labelLatenciaUSB->setPalette(palette);
+        }
+
+        if (timerPingUSB->elapsed() >= 4000)
+        {
+            ui->labelLatenciaUSB->setText("<" + QString::number(timerPingUSB->elapsed()) + " ms");
+
+            QPalette palette = ui->labelLatenciaUSB->palette();
+
+            palette.setColor(ui->labelLatenciaUSB->foregroundRole(), QColor(0xFF, 0x00, 0x00, 0xFF));
+
+            ui->labelLatenciaUSB->setPalette(palette);
+        }
+
+        if (timerPingUSB->elapsed() >= 15000)
+        {
+            serialPort->close();
+        }
+
+        QByteArray data;
+
+        data.append(0xF0);
+
+        sendCMD(data, SendTarget::SendUSB);
+    }
+
+    else
+    {
+        ui->labelEstadoUSB->setText("Desconectado");
+
+        if (timerPingUSB->isValid())
+        {
+            timerPingUSB->invalidate();
+        }
+
+        ui->labelLatenciaUSB->setText("");
+    }
+}
+
+void MainWindow::pingUSB()
+{
+    if (timerPingUSB->isValid())
+    {
+        ui->labelLatenciaUSB->setText(QString::number(timerPingUSB->restart()) + " ms");
+
+        timerPingUSB->invalidate();
+    }
+}
+
+void MainWindow::on_pushButtonEnviarVelocidadMotor_clicked()
+{
+    QByteArray data;
+
+    data.append(0xC1);
+
+    byte_translate.f = ui->doubleSpinBoxMotorDerecha->value();
+
+    data.append(byte_translate.u8[0]);
+    data.append(byte_translate.u8[1]);
+    data.append(byte_translate.u8[2]);
+    data.append(byte_translate.u8[3]);
+
+    byte_translate.f = ui->doubleSpinBoxMotorIzquierda->value();
+
+    data.append(byte_translate.u8[0]);
+    data.append(byte_translate.u8[1]);
+    data.append(byte_translate.u8[2]);
+    data.append(byte_translate.u8[3]);
+
+    byte_translate.u16[0] = ui->spinBoxTiempoMotores->value();
+
+    data.append(byte_translate.u8[0]);
+    data.append(byte_translate.u8[1]);
+
+    sendCMD(data);
 }

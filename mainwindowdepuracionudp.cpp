@@ -180,7 +180,10 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
     data.append('\r');
     data.append('\n');
 
-    udpSocket->writeDatagram(data, *ip, *port);
+    if (udpSocket->isOpen())
+    {
+        udpSocket->writeDatagram(data, *ip, *port);
+    }
 }
 
 void MainWindowDepuracionUDP::on_checkBoxCMD_stateChanged(int arg1)
