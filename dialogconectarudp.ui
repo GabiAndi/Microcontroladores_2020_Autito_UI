@@ -146,6 +146,9 @@
        <property name="text">
         <string>Conectar</string>
        </property>
+       <property name="default">
+        <bool>true</bool>
+       </property>
       </widget>
      </item>
     </layout>
