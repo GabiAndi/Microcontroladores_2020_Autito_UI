@@ -177,9 +177,6 @@ void MainWindowDepuracionUDP::on_pushButtonEnviar_clicked()
 
     data.append(checksum);
 
-    data.append('\r');
-    data.append('\n');
-
     if (udpSocket->isOpen())
     {
         udpSocket->writeDatagram(data, *ip, *port);

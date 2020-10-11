@@ -192,5 +192,6 @@ class MainWindow : public QMainWindow
         void on_checkBox_stateChanged(int arg1);
         void on_pushButtonConfigurarWiFi_clicked();
         void on_pushButtonEnviarVelocidadMotor_clicked();
+        void on_pushButtonEnviarFrecuencia_clicked();
 };
 #endif // MAINWINDOW_H

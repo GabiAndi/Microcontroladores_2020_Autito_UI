@@ -1056,9 +1056,6 @@ void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
 
             if (udpSocket->isOpen())
             {
-                data.append('\r');
-                data.append('\n');
-
                 udpSocket->writeDatagram(data, ip, port);
             }
 
@@ -1075,9 +1072,6 @@ void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
         case SendTarget::SendUDP:
             if (udpSocket->isOpen())
             {
-                data.append('\r');
-                data.append('\n');
-
                 udpSocket->writeDatagram(data, ip, port);
             }
 
@@ -1385,6 +1379,22 @@ void MainWindow::on_pushButtonEnviarVelocidadMotor_clicked()
     data.append(byte_translate.u8[3]);
 
     byte_translate.u16[0] = ui->spinBoxTiempoMotores->value();
+
+    data.append(byte_translate.u8[0]);
+    data.append(byte_translate.u8[1]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonEnviarFrecuencia_clicked()
+{
+    QByteArray data;
+
+    data.append(0xC2);
+
+    data.append(0xFF);
+
+    byte_translate.u16[0] = ui->spinBoxFrecuenciaMotores->value();
 
     data.append(byte_translate.u8[0]);
     data.append(byte_translate.u8[1]);
