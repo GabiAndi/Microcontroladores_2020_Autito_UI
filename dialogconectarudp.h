@@ -6,6 +6,8 @@
 #include <QUdpSocket>
 #include <QHostAddress>
 
+#include "systemmanager.h"
+
 namespace Ui {class DialogConectarUDP;}
 
 class DialogConectarUDP : public QDialog
@@ -16,10 +18,13 @@ class DialogConectarUDP : public QDialog
         explicit DialogConectarUDP(QWidget *parent = nullptr);
         ~DialogConectarUDP();
 
+        void setSystemManager(SystemManager *sys);
         void setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port);
 
     private:
         Ui::DialogConectarUDP *ui;
+
+        SystemManager *sys = nullptr;
 
         QUdpSocket *udpSocket = nullptr;
         QHostAddress *ip = nullptr;

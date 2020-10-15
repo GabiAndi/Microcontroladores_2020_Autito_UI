@@ -7,9 +7,34 @@ MainWindow::MainWindow(QWidget *parent)
 {
     ui->setupUi(this);
 
+    // Inicialización del gestor del sistema
+    sys = new SystemManager();
+
+    // Inicializacion de los archivos
+    // Archivo de logs del sistema
+    if (!sys->createLogFile())
+    {
+        QMessageBox *messageBox = new QMessageBox(this);
+
+        messageBox->setAttribute(Qt::WA_DeleteOnClose);
+        messageBox->setIcon(QMessageBox::Icon::Warning);
+        messageBox->setWindowTitle("Error al abrir el archivo");
+        messageBox->setText("No se pudo crear el archivo del log de sistema");
+        messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+        messageBox->open();
+    }
+
+    sys->LOG("Inicio de la aplicación");
+
+    // Archivo de datos del ADC
+    adcData = new QFile();
+
+    // Puerto serie
     serialPort = new QSerialPort();
     connect(serialPort, &QSerialPort::readyRead, this, &MainWindow::readDataUSB);
 
+    // Socket UDP
     udpSocket = new QUdpSocket();
     connect(udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readDataUDP);
 
@@ -34,26 +59,6 @@ MainWindow::MainWindow(QWidget *parent)
 
     timerUDPReadTimeOut = new QTimer(this);
     connect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
-
-    // Inicializacion de los archivos
-    // Archivo de logs del sistema
-    log = new QFile("log.txt");
-
-    if (!log->open(QIODevice::ReadWrite))
-    {
-        QMessageBox *messageBox = new QMessageBox(this);
-
-        messageBox->setAttribute(Qt::WA_DeleteOnClose);
-        messageBox->setIcon(QMessageBox::Icon::Warning);
-        messageBox->setWindowTitle("Error al abrir el archivo");
-        messageBox->setText("No se pudo crear el archivo del log de sistema");
-        messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-        messageBox->open();
-    }
-
-    // Archivo de datos del ADC
-    adcData = new QFile();
 
     // Se crea los graficos
     createChartADC();
@@ -96,7 +101,6 @@ MainWindow::~MainWindow()
     delete serialPort;
     delete udpSocket;
 
-    delete log;
     delete adcData;
 
     delete adc0Spline;
@@ -113,20 +117,21 @@ MainWindow::~MainWindow()
     delete timerPingUDP;
     delete timerCheckStatusUSB;
 
+    delete sys;
+
     delete ui;
 }
 
 void MainWindow::closeEvent(QCloseEvent *)
 {
-    if (log->isOpen())
-    {
-        log->close();
-    }
-
     if (adcData->isOpen())
     {
         adcData->close();
+
+        sys->LOG("Se cerro el archivo de datos de adc");
     }
+
+    sys->LOG("Cierre de la apliación");
 }
 
 void MainWindow::mainWindowDepuracionUSBClose()
@@ -134,6 +139,8 @@ void MainWindow::mainWindowDepuracionUSBClose()
     disconnect(mainWindowDepuracionUSB, &MainWindowDepuracionUSB::closeSignal, this, &MainWindow::mainWindowDepuracionUSBClose);
 
     mainWindowDepuracionUSB = nullptr;
+
+    sys->LOG("Cierre de la depuración USB");
 }
 
 void MainWindow::mainWindowDepuracionUDPClose()
@@ -141,6 +148,8 @@ void MainWindow::mainWindowDepuracionUDPClose()
     disconnect(mainWindowDepuracionUDP, &MainWindowDepuracionUDP::closeSignal, this, &MainWindow::mainWindowDepuracionUDPClose);
 
     mainWindowDepuracionUDP = nullptr;
+
+    sys->LOG("Cierre de la depuración UDP");
 }
 
 void MainWindow::readDataUSB()
@@ -359,12 +368,21 @@ void MainWindow::readDataUSB()
 
                                     break;
 
+                                case 0xC3:  // Datos de la bateria
+                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 1];
+                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 2];
+
+                                    ui->widgetAuto->setBateryValue(byte_translate.u16[0]);
+
+                                    break;
+
                                 case 0xF0:  // ALIVE
                                     pingUSB();
 
                                     break;
 
                                 default:	// Comando no valido
+                                    sys->LOG("Error de comando en el paquete via USB");
 
                                     break;
                             }
@@ -373,7 +391,11 @@ void MainWindow::readDataUSB()
                         // Corrupcion de datos al recibir
                         else
                         {
-
+                            sys->LOG("Error de ckecksum en el paquete via USB:\r\n\tComando: "
+                                    + QString::asprintf("%x\r\n\t", buffer_read_usb.data[buffer_read_usb.payload_init - 1])
+                                    + "Checksum recivido: " + QString::asprintf("%x\r\n\t", buffer_read_usb.data[buffer_read_usb.payload_init + buffer_read_usb.payload_length])
+                                    + "Checksum esperado: " + QString::asprintf("%x", (checkXor(buffer_read_usb.data[buffer_read_usb.payload_init - 1], (uint8_t *)(buffer_read_usb.data),
+                                                                                       buffer_read_usb.payload_init, buffer_read_usb.payload_length))));
                         }
 
                         // Detengo el timeout
@@ -610,12 +632,21 @@ void MainWindow::readDataUDP()
 
                                         break;
 
+                                    case 0xC3:  // Datos de la bateria
+                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 1];
+                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 2];
+
+                                        ui->widgetAuto->setBateryValue(byte_translate.u16[0]);
+
+                                        break;
+
                                     case 0xF0:  // ALIVE
                                         pingUDP();
 
                                         break;
 
                                     default:	// Comando no valido
+                                        sys->LOG("Error de comando en el paquete via UDP");
 
                                         break;
                                 }
@@ -624,7 +655,11 @@ void MainWindow::readDataUDP()
                             // Corrupcion de datos al recibir
                             else
                             {
-
+                                sys->LOG("Error de ckecksum en el paquete via UDP:\r\n\tComando: "
+                                        + QString::asprintf("%x\r\n\t", buffer_read_udp.data[buffer_read_udp.payload_init - 1])
+                                        + "Checksum recivido: " + QString::asprintf("%x\r\n\t", buffer_read_udp.data[buffer_read_udp.payload_init + buffer_read_udp.payload_length])
+                                        + "Checksum esperado: " + QString::asprintf("%x\r\n\t", (checkXor(buffer_read_udp.data[buffer_read_udp.payload_init - 1], (uint8_t *)(buffer_read_udp.data),
+                                                                                           buffer_read_udp.payload_init, buffer_read_udp.payload_length))));
                             }
 
                             // Detengo el timeout
@@ -647,6 +682,8 @@ void MainWindow::timeOutReadUSB()
     timerUSBReadTimeOut->stop();
 
     buffer_read_usb.read_state = 0;
+
+    sys->LOG("TimeOut leyendo paquete via USB");
 }
 
 void MainWindow::timeOutReadUDP()
@@ -654,6 +691,8 @@ void MainWindow::timeOutReadUDP()
     timerUDPReadTimeOut->stop();
 
     buffer_read_udp.read_state = 0;
+
+    sys->LOG("TimeOut leyendo paquete via UDP");
 }
 
 uint8_t MainWindow::checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength)
@@ -682,15 +721,19 @@ void MainWindow::on_actionUSB_triggered()
     if (serialPort->isOpen())
     {
         mainWindowDepuracionUSB = new MainWindowDepuracionUSB(this);
+        mainWindowDepuracionUSB->setSystemManager(sys);
         mainWindowDepuracionUSB->setSerialPort(serialPort);
         mainWindowDepuracionUSB->show();
 
         connect(mainWindowDepuracionUSB, &MainWindowDepuracionUSB::closeSignal, this, &MainWindow::mainWindowDepuracionUSBClose);
+
+        sys->LOG("Depuración USB iniciada:\r\n\tNombre: " + serialPort->portName() + "\r\n\tBaud rate: " + serialPort->baudRate());
     }
 
     else
     {
         dialogConectarUSB = new DialogConectarUSB(this);
+        dialogConectarUSB->setSystemManager(sys);
         dialogConectarUSB->setSerialPort(serialPort);
         dialogConectarUSB->show();
 
@@ -703,6 +746,8 @@ void MainWindow::on_actionUSB_triggered()
         messageBox->setStandardButtons(QMessageBox::Button::Ok);
 
         messageBox->open();
+
+        sys->LOG("Depuración USB tratando de iniciar pero el puerto no estaba abierto");
     }
 }
 
@@ -711,15 +756,19 @@ void MainWindow::on_actionUDP_triggered()
     if (udpSocket->isOpen())
     {
         mainWindowDepuracionUDP = new MainWindowDepuracionUDP(this);
+        mainWindowDepuracionUDP->setSystemManager(sys);
         mainWindowDepuracionUDP->setUdpSocket(udpSocket, &ip, &port);
         mainWindowDepuracionUDP->show();
 
         connect(mainWindowDepuracionUDP, &MainWindowDepuracionUDP::closeSignal, this, &MainWindow::mainWindowDepuracionUDPClose);
+
+        sys->LOG("Depuración UDP iniciada:\r\n\tIP: " + ip.toString() + "\r\n\tPuerto: " + port);
     }
 
     else
     {
         dialogConectarUDP = new DialogConectarUDP(this);
+        dialogConectarUDP->setSystemManager(sys);
         dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
         dialogConectarUDP->show();
 
@@ -732,21 +781,29 @@ void MainWindow::on_actionUDP_triggered()
         messageBox->setStandardButtons(QMessageBox::Button::Ok);
 
         messageBox->open();
+
+        sys->LOG("Depuración UDP tratando de iniciar pero el socket no estaba abierto");
     }
 }
 
 void MainWindow::on_actionUSB_2_triggered()
 {
     dialogConectarUSB = new DialogConectarUSB(this);
+    dialogConectarUSB->setSystemManager(sys);
     dialogConectarUSB->setSerialPort(serialPort);
     dialogConectarUSB->show();
+
+    sys->LOG("Iniciando conexión USB");
 }
 
 void MainWindow::on_actionUDP_2_triggered()
 {
     dialogConectarUDP = new DialogConectarUDP(this);
+    dialogConectarUDP->setSystemManager(sys);
     dialogConectarUDP->setUdpSocket(udpSocket, &ip, &port);
     dialogConectarUDP->show();
+
+    sys->LOG("Iniciando conexión UDP");
 }
 
 void MainWindow::on_pushButtonCapturaDatosADC_clicked()
@@ -787,6 +844,8 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
         if (adcData->isOpen())
         {
             adcData->close();
+
+            sys->LOG("Se cerro el archivo de datos de adc");
         }
     }
 
@@ -794,8 +853,8 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
     {
         QString fileName;
 
-        QDate date = QDateTime::currentDateTime().date();
-        QTime time = QDateTime::currentDateTime().time();
+        QDate date = QDate::currentDate();
+        QTime time = QTime::currentTime();
 
         if (!QDir("adc").exists())
         {
@@ -862,11 +921,15 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
 
         if (adcData->open(QIODevice::ReadWrite))
         {
+            sys->LOG("Se creo el archivo de datos de adc:\r\n\tNombre: " + fileName);
+
             adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
         }
 
         else
         {
+            sys->LOG("Error al crear el archivo de datos de adc:\r\n\tNombre: " + fileName);
+
             QMessageBox *messageBox = new QMessageBox(this);
 
             messageBox->setAttribute(Qt::WA_DeleteOnClose);
@@ -882,6 +945,8 @@ void MainWindow::on_checkBox_stateChanged(int arg1)
 
 void MainWindow::createChartADC()
 {
+    sys->LOG("Iniciando gráficas vacias");
+
     adcChart = new QChart();
 
     adcChart->setTitle("Valores del ADC");
@@ -1081,6 +1146,8 @@ void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
 
 void MainWindow::on_pushButtonConfigurarWiFi_clicked()
 {
+    sys->LOG("Iniciando configuración de conexión WiFi");
+
     bool ok;
 
     QString ssid;
@@ -1105,6 +1172,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         data.append(ssid.toLatin1());
 
         sendCMD(data);
+
+        sys->LOG("Envio de SSID");
     }
 
     // Para la contraseña
@@ -1122,6 +1191,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         data.append(psw.toLatin1());
 
         sendCMD(data);
+
+        sys->LOG("Envio de PSW");
     }
 
     // Para la ip del mcu
@@ -1139,6 +1210,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         data.append(ipMcu.toLatin1());
 
         sendCMD(data);
+
+        sys->LOG("Envio de IP MCU");
     }
 
     // Para la ip de la pc
@@ -1156,6 +1229,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         data.append(ipPc.toLatin1());
 
         sendCMD(data);
+
+        sys->LOG("Envio de IP PC");
     }
 
     // Puerto de comunicacion
@@ -1173,6 +1248,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         data.append(port.toLatin1());
 
         sendCMD(data);
+
+        sys->LOG("Envio de PORT");
     }
 
     // Se guardan los datos en la flash del micro
@@ -1197,6 +1274,8 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
             sendCMD(data);
 
             break;
+
+            sys->LOG("Envio de escritura en la FLASH");
     }
 }
 
@@ -1247,6 +1326,9 @@ void MainWindow::checkStatusUDP()
         if (timerPingUDP->elapsed() >= 15000)
         {
             udpSocket->close();
+
+            sys->LOG("Se cerro el socket UDP porque el objetivo no respondio mas:\r\n\tIP: " + ip.toString() +
+                     "\r\n\tPuerto: " + QString::number(port));
         }
 
         QByteArray data;
@@ -1326,6 +1408,9 @@ void MainWindow::checkStatusUSB()
         if (timerPingUSB->elapsed() >= 15000)
         {
             serialPort->close();
+
+            sys->LOG("Se cerro el puerto USB porque el objetivo no respondio mas:\r\n\tNombre: " + serialPort->portName()
+                + "\r\n\tBaud rate: " + serialPort->baudRate());
         }
 
         QByteArray data;

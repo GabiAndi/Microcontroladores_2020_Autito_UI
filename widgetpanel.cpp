@@ -50,7 +50,7 @@ void WidgetPanel::paintEvent(QPaintEvent *)
     font.setPointSize(38);
     painter.setFont(font);
 
-    painter.drawText(-45, 360, "85\%");
+    painter.drawText(-45, 360, QString::asprintf("%u%%", bateryValue));
 
     font.setPointSize(22);
 }
@@ -93,6 +93,13 @@ void WidgetPanel::setSensor5Value(uint16_t sensor5Value)
 void WidgetPanel::setSensor6Value(uint16_t sensor6Value)
 {
     this->sensor6Value = sensor6Value;
+
+    update();
+}
+
+void WidgetPanel::setBateryValue(uint16_t bateryValue)
+{
+    this->bateryValue = bateryValue;
 
     update();
 }

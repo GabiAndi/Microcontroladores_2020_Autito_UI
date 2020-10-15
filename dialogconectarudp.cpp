@@ -18,6 +18,11 @@ void DialogConectarUDP::closeEvent(QCloseEvent *)
     deleteLater();
 }
 
+void DialogConectarUDP::setSystemManager(SystemManager *sys)
+{
+    this->sys = sys;
+}
+
 void DialogConectarUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port)
 {
     this->udpSocket = udpSocket;
@@ -49,6 +54,8 @@ void DialogConectarUDP::on_pushButtonConectar_clicked()
         ui->lineEditIP->setEnabled(true);
         ui->lineEditPuerto->setEnabled(true);
         ui->pushButtonConectar->setText("Conectar");
+
+        sys->LOG("Socket UDP cerrado");
     }
 
     else
@@ -63,5 +70,7 @@ void DialogConectarUDP::on_pushButtonConectar_clicked()
         ui->lineEditIP->setEnabled(false);
         ui->lineEditPuerto->setEnabled(false);
         ui->pushButtonConectar->setText("Desconectar");
+
+        sys->LOG("Socket UDP abierto:\r\n\tIP: " + ip->toString() + "\r\n\tPuerto: " + QString::number(*port));
     }
 }

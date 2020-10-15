@@ -24,15 +24,19 @@ class WidgetPanel : public QWidget
         void setSensor5Value(uint16_t sensor5Value);
         void setSensor6Value(uint16_t sensor6Value);
 
-    private:
-        void paintEvent(QPaintEvent *)override;
+        void setBateryValue(uint16_t bateryValue);
 
+    private:
         uint16_t sensor1Value = 0;
         uint16_t sensor2Value = 0;
         uint16_t sensor3Value = 0;
         uint16_t sensor4Value = 0;
         uint16_t sensor5Value = 0;
         uint16_t sensor6Value = 0;
+
+        uint16_t bateryValue = 0;
+
+        void paintEvent(QPaintEvent *)override;
 };
 
 #endif // WIDGETPANEL_H

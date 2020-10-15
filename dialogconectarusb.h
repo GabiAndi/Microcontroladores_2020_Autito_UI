@@ -7,6 +7,8 @@
 #include <QSerialPortInfo>
 #include <QMessageBox>
 
+#include "systemmanager.h"
+
 namespace Ui {class DialogConectarUSB;}
 
 class DialogConectarUSB : public QDialog
@@ -17,10 +19,13 @@ class DialogConectarUSB : public QDialog
         explicit DialogConectarUSB(QWidget *parent = nullptr);
         ~DialogConectarUSB();
 
+        void setSystemManager(SystemManager *sys);
         void setSerialPort(QSerialPort *serialPort);
 
     private:
         Ui::DialogConectarUSB *ui;
+
+        SystemManager *sys = nullptr;
 
         QSerialPort *serialPort = nullptr;
 

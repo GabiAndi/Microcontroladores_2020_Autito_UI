@@ -9,6 +9,9 @@ MainWindowDepuracionUSB::MainWindowDepuracionUSB(QWidget *parent) :
 
     // Comandos
     ui->comboBoxComandos->addItem("C0 | Envio de datos del ADC");
+    ui->comboBoxComandos->addItem("C1 | Seteo de velocidad de motores");
+    ui->comboBoxComandos->addItem("C2 | Cambio de frecuencia de los motores");
+    ui->comboBoxComandos->addItem("C3 | Envio de datos del nivel de bateria");
     ui->comboBoxComandos->addItem("D0 | Setea el SSID");
     ui->comboBoxComandos->addItem("D1 | Setea la contraseña");
     ui->comboBoxComandos->addItem("D2 | Setea la ip del autito");
@@ -31,6 +34,11 @@ void MainWindowDepuracionUSB::closeEvent(QCloseEvent *)
     emit(closeSignal());
 
     deleteLater();
+}
+
+void MainWindowDepuracionUSB::setSystemManager(SystemManager *sys)
+{
+    this->sys = sys;
 }
 
 void MainWindowDepuracionUSB::setSerialPort(QSerialPort *serialPort)

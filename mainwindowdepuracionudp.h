@@ -6,6 +6,8 @@
 #include <QUdpSocket>
 #include <QMessageBox>
 
+#include "systemmanager.h"
+
 namespace Ui {class MainWindowDepuracionUDP;}
 
 class MainWindowDepuracionUDP : public QMainWindow
@@ -16,6 +18,8 @@ class MainWindowDepuracionUDP : public QMainWindow
         explicit MainWindowDepuracionUDP(QWidget *parent = nullptr);
         ~MainWindowDepuracionUDP();
 
+        void setSystemManager(SystemManager *sys);
+
         void setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port);
 
         void readData(QByteArray dataRead);
@@ -25,6 +29,8 @@ class MainWindowDepuracionUDP : public QMainWindow
 
     private:
         Ui::MainWindowDepuracionUDP *ui;
+
+        SystemManager *sys = nullptr;
 
         bool captureEnable = false;
 

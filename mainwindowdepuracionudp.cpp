@@ -9,6 +9,9 @@ MainWindowDepuracionUDP::MainWindowDepuracionUDP(QWidget *parent) :
 
     // Comandos
     ui->comboBoxComandos->addItem("C0 | Envio de datos del ADC");
+    ui->comboBoxComandos->addItem("C1 | Seteo de velocidad de motores");
+    ui->comboBoxComandos->addItem("C2 | Cambio de frecuencia de los motores");
+    ui->comboBoxComandos->addItem("C3 | Envio de datos del nivel de bateria");
     ui->comboBoxComandos->addItem("D0 | Setea el SSID");
     ui->comboBoxComandos->addItem("D1 | Setea la contraseña");
     ui->comboBoxComandos->addItem("D2 | Setea la ip del autito");
@@ -25,18 +28,23 @@ MainWindowDepuracionUDP::~MainWindowDepuracionUDP()
     delete ui;
 }
 
-void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port)
-{
-    this->udpSocket = udpSocket;
-    this->ip = ip;
-    this->port = port;
-}
-
 void MainWindowDepuracionUDP::closeEvent(QCloseEvent *)
 {
     emit(closeSignal());
 
     deleteLater();
+}
+
+void MainWindowDepuracionUDP::setSystemManager(SystemManager *sys)
+{
+    this->sys = sys;
+}
+
+void MainWindowDepuracionUDP::setUdpSocket(QUdpSocket *udpSocket, QHostAddress *ip, quint16 *port)
+{
+    this->udpSocket = udpSocket;
+    this->ip = ip;
+    this->port = port;
 }
 
 void MainWindowDepuracionUDP::readData(QByteArray dataRead)

@@ -6,7 +6,7 @@
 #include <QSerialPort>
 #include <QMessageBox>
 
-#include <QDebug>
+#include "systemmanager.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {class MainWindowDepuracionUSB;}
@@ -20,6 +20,8 @@ class MainWindowDepuracionUSB : public QMainWindow
         explicit MainWindowDepuracionUSB(QWidget *parent = nullptr);
         ~MainWindowDepuracionUSB();
 
+        void setSystemManager(SystemManager *sys);
+
         void setSerialPort(QSerialPort *serialPort);
 
         void readData(QByteArray dataRead);
@@ -29,6 +31,8 @@ class MainWindowDepuracionUSB : public QMainWindow
 
     private:
         Ui::MainWindowDepuracionUSB *ui;
+
+        SystemManager *sys = nullptr;
 
         QSerialPort *serialPort = nullptr;
 

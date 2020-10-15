@@ -18,6 +18,11 @@ void DialogConectarUSB::closeEvent(QCloseEvent *)
     deleteLater();
 }
 
+void DialogConectarUSB::setSystemManager(SystemManager *sys)
+{
+    this->sys = sys;
+}
+
 void DialogConectarUSB::setSerialPort(QSerialPort *serialPort)
 {
     this->serialPort = serialPort;
@@ -70,6 +75,8 @@ void DialogConectarUSB::on_pushButtonConectar_clicked()
             ui->comboBoxPuertos->setEnabled(false);
             ui->pushButtonActualizarPuertos->setEnabled(false);
             ui->pushButtonConectar->setText("Desconectar");
+
+            sys->LOG("Puerto USB abierto:\r\n\tNombre: " + serialPort->portName() + "\r\n\tBaud rate: " + QString::number(serialPort->baudRate()));
         }
 
         else
@@ -83,6 +90,8 @@ void DialogConectarUSB::on_pushButtonConectar_clicked()
             messageBox->setStandardButtons(QMessageBox::Button::Ok);
 
             messageBox->open();
+
+            sys->LOG("Error al abrir puerto USB:\r\n\tNombre: " + serialPort->portName() + "\r\n\tBaud rate: " + QString::number(serialPort->baudRate()));
         }
     }
 
@@ -93,5 +102,7 @@ void DialogConectarUSB::on_pushButtonConectar_clicked()
         ui->comboBoxPuertos->setEnabled(true);
         ui->pushButtonActualizarPuertos->setEnabled(true);
         ui->pushButtonConectar->setText("Conectar");
+
+        sys->LOG("Puerto USB cerrado");
     }
 }

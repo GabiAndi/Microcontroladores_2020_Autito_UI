@@ -10,7 +10,7 @@
 #include <QFile>
 #include <QTextStream>
 #include <QTime>
-#include <QDateTime>
+#include <QDate>
 #include <QDir>
 #include <QtCharts>
 #include <QSplineSeries>
@@ -23,8 +23,9 @@
 #include <QPalette>
 #include <QColor>
 
-#include <stdint.h>
+#include <inttypes.h>
 
+#include "systemmanager.h"
 #include "mainwindowdepuracionusb.h"
 #include "mainwindowdepuracionudp.h"
 #include "dialogconectarusb.h"
@@ -47,6 +48,8 @@ class MainWindow : public QMainWindow
 
     private:
         Ui::MainWindow *ui;
+
+        SystemManager *sys = nullptr;
 
         typedef union
         {
@@ -132,7 +135,6 @@ class MainWindow : public QMainWindow
         QTimer *timerUSBReadTimeOut = nullptr;
         QTimer *timerUDPReadTimeOut = nullptr;
 
-        QFile *log = nullptr;
         QFile *adcData = nullptr;
 
         // Grafico clapeta
