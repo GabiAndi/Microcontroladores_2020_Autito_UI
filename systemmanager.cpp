@@ -16,10 +16,29 @@ SystemManager::~SystemManager()
 bool SystemManager::createLogFile()
 {
     // Archivo de logs del sistema
-    log = new QFile("log.txt");
+    log = new QFile("Log.txt");
 
-    if (!(log->open(QIODevice::ReadWrite | QIODevice::NewOnly) ||
-          log->open(QIODevice::ReadWrite | QIODevice::ExistingOnly | QIODevice::Append)))
+    if (!log->open(QIODevice::WriteOnly))
+    {
+        return false;
+    }
+
+    return true;
+}
+
+bool SystemManager::saveLogFile()
+{
+    if (log->isOpen())
+    {
+        log->close();
+    }
+
+    else
+    {
+        return false;
+    }
+
+    if (!log->open(QIODevice::WriteOnly))
     {
         return false;
     }

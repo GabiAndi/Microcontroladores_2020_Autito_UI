@@ -13,6 +13,8 @@ class SystemManager
 
         bool createLogFile();
 
+        bool saveLogFile();
+
         void LOG(QString logData);
 
     private:

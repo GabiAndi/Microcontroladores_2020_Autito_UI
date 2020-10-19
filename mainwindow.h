@@ -49,63 +49,47 @@ class MainWindow : public QMainWindow
     private:
         Ui::MainWindow *ui;
 
-        SystemManager *sys = nullptr;
-
-        typedef union
-        {
-            volatile uint8_t u8[4];
-            volatile uint16_t u16[2];
-            volatile uint32_t u32;
-
-            volatile int8_t i8[4];
-            volatile int16_t i16[2];
-            volatile int32_t i32;
-
-            volatile float f;
-        }byte_translate_u;
-
-        typedef struct
-        {
-            volatile uint8_t data[256];
-            volatile uint8_t read_index;
-            volatile uint8_t write_index;
-
-            volatile uint8_t read_state;
-            volatile uint8_t payload_length;
-            volatile uint8_t payload_init;
-        }buffer_read_usb_t;
-
-        typedef struct
-        {
-            volatile uint8_t data[256];
-            volatile uint8_t read_index;
-            volatile uint8_t write_index;
-        }buffer_write_usb_t;
-
-        typedef struct
-        {
-            volatile uint8_t data[256];
-            volatile uint8_t read_index;
-            volatile uint8_t write_index;
-
-            volatile uint8_t read_state;
-            volatile uint8_t payload_length;
-            volatile uint8_t payload_init;
-        }buffer_read_udp_t;
-
-        typedef struct
-        {
-            volatile uint8_t data[256];
-            volatile uint8_t read_index;
-            volatile uint8_t write_index;
-        }buffer_write_udp_t;
-
         enum SendTarget
         {
             SendALL = 0,
             SendUSB = 1,
             SendUDP = 2
         };
+
+        typedef union
+        {
+            uint8_t u8[4];
+            uint16_t u16[2];
+            uint32_t u32;
+
+            int8_t i8[4];
+            int16_t i16[2];
+            int32_t i32;
+
+            float f;
+        }byte_converter_u;
+
+        typedef struct
+        {
+            volatile uint8_t data[256];
+            volatile uint8_t read_index;
+            volatile uint8_t write_index;
+        }ring_buffer_t;
+
+        typedef struct
+        {
+            ring_buffer_t *buffer_read;
+
+            uint8_t read_state;
+            uint8_t read_payload_init;
+            uint8_t read_payload_length;
+
+            QTimer *timeout;
+
+            SendTarget sendTarget;
+        }cmd_manager_t;
+
+        SystemManager *sys = nullptr;
 
         QSerialPort *serialPort = nullptr;
 
@@ -124,16 +108,13 @@ class MainWindow : public QMainWindow
         DialogConectarUSB *dialogConectarUSB = nullptr;
         DialogConectarUDP *dialogConectarUDP = nullptr;
 
-        buffer_read_usb_t buffer_read_usb;
-        buffer_write_usb_t buffer_write_usb;
+        ring_buffer_t buffer_read_usb;
+        ring_buffer_t buffer_read_udp;
 
-        buffer_read_udp_t buffer_read_udp;
-        buffer_write_udp_t buffer_write_udp;
+        byte_converter_u byte_converter;
 
-        byte_translate_u byte_translate;
-
-        QTimer *timerUSBReadTimeOut = nullptr;
-        QTimer *timerUDPReadTimeOut = nullptr;
+        cmd_manager_t cmd_manager_usb;
+        cmd_manager_t cmd_manager_udp;
 
         QFile *adcData = nullptr;
 
@@ -155,7 +136,12 @@ class MainWindow : public QMainWindow
         QList<QPointF> adc4Datos;
         QList<QPointF> adc5Datos;
 
-        uint8_t checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength);
+        uint8_t checkXor(uint8_t *data, uint8_t init, uint8_t length);
+        uint8_t checkXor(QByteArray data);
+
+        void dataPackage(cmd_manager_t *cmd_manager);
+
+        QString getCurrentDataPackage(cmd_manager_t *cmd_manager);
 
         void createChartADC();
 

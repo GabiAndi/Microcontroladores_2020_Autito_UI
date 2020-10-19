@@ -19,6 +19,7 @@ MainWindowDepuracionUDP::MainWindowDepuracionUDP(QWidget *parent) :
     ui->comboBoxComandos->addItem("D4 | Setea el puerto de comunicación");
     ui->comboBoxComandos->addItem("D5 | Guarda los datos de la RAM en la FLASH");
     ui->comboBoxComandos->addItem("F0 | Alive");
+    ui->comboBoxComandos->addItem("F1 | Modo depuración");
     ui->comboBoxComandos->addItem("F2 | Enviar comando AT");
     ui->comboBoxComandos->addItem("F3 | Enviar datos a ESP");
 }

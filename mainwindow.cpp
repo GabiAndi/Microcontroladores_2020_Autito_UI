@@ -19,7 +19,7 @@ MainWindow::MainWindow(QWidget *parent)
         messageBox->setAttribute(Qt::WA_DeleteOnClose);
         messageBox->setIcon(QMessageBox::Icon::Warning);
         messageBox->setWindowTitle("Error al abrir el archivo");
-        messageBox->setText("No se pudo crear el archivo del log de sistema");
+        messageBox->setText("No se pudo crear el archivo del log de sistema.");
         messageBox->setStandardButtons(QMessageBox::Button::Ok);
 
         messageBox->open();
@@ -39,26 +39,34 @@ MainWindow::MainWindow(QWidget *parent)
     connect(udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readDataUDP);
 
     // Inicializacion de los buffers
+    // Para USB
     buffer_read_usb.read_index = 0;
     buffer_read_usb.write_index = 0;
-    buffer_read_usb.read_state = 0;
 
-    buffer_write_usb.read_index = 0;
-    buffer_write_usb.write_index = 0;
-
+    // Para UDP
     buffer_read_udp.read_index = 0;
     buffer_read_udp.write_index = 0;
-    buffer_read_udp.read_state = 0;
 
-    buffer_write_udp.read_index = 0;
-    buffer_write_udp.write_index = 0;
+    // Inicializacion de los manejadores de comandos
+    // Para USB
+    cmd_manager_usb.buffer_read = &buffer_read_usb;
+    cmd_manager_usb.read_payload_init = 0;
+    cmd_manager_usb.read_payload_length = 0;
+    cmd_manager_usb.read_state = 0;
+    cmd_manager_usb.sendTarget = SendTarget::SendUSB;
 
-    // Inicializacion de los time out
-    timerUSBReadTimeOut = new QTimer(this);
-    connect(timerUSBReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUSB);
+    cmd_manager_usb.timeout = new QTimer(this);
+    connect(cmd_manager_usb.timeout, &QTimer::timeout, this, &MainWindow::timeOutReadUSB);
 
-    timerUDPReadTimeOut = new QTimer(this);
-    connect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
+    // Para UDP
+    cmd_manager_udp.buffer_read = &buffer_read_udp;
+    cmd_manager_udp.read_payload_init = 0;
+    cmd_manager_udp.read_payload_length = 0;
+    cmd_manager_udp.read_state = 0;
+    cmd_manager_udp.sendTarget = SendTarget::SendUDP;
+
+    cmd_manager_udp.timeout = new QTimer(this);
+    connect(cmd_manager_udp.timeout, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
 
     // Se crea los graficos
     createChartADC();
@@ -92,8 +100,8 @@ MainWindow::~MainWindow()
     disconnect(serialPort, &QSerialPort::readyRead, this, &MainWindow::readDataUSB);
     disconnect(udpSocket, &QUdpSocket::readyRead, this, &MainWindow::readDataUDP);
 
-    disconnect(timerUSBReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUSB);
-    disconnect(timerUDPReadTimeOut, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
+    disconnect(cmd_manager_usb.timeout, &QTimer::timeout, this, &MainWindow::timeOutReadUSB);
+    disconnect(cmd_manager_udp.timeout, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
 
     disconnect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
     disconnect(timerCheckStatusUSB, &QTimer::timeout, this, &MainWindow::checkStatusUSB);
@@ -168,244 +176,7 @@ void MainWindow::readDataUSB()
 
         if (buffer_read_usb.read_index != buffer_read_usb.write_index)
         {
-            switch (buffer_read_usb.read_state)
-            {
-                case 0:	// Inicio de la abecera
-                    if (buffer_read_usb.data[buffer_read_usb.read_index] == 'U')
-                    {
-                        buffer_read_usb.read_state = 1;
-
-                        timerUSBReadTimeOut->start(100);
-                    }
-
-                    break;
-
-                case 1:
-                    if (buffer_read_usb.data[buffer_read_usb.read_index] == 'N')
-                    {
-                        buffer_read_usb.read_state = 2;
-                    }
-
-                    else
-                    {
-                        buffer_read_usb.read_state = 0;
-                    }
-
-                    break;
-
-                case 2:
-                    if (buffer_read_usb.data[buffer_read_usb.read_index] == 'E')
-                    {
-                        buffer_read_usb.read_state = 3;
-                    }
-
-                    else
-                    {
-                        buffer_read_usb.read_state = 0;
-                    }
-
-                    break;
-
-                case 3:
-                    if (buffer_read_usb.data[buffer_read_usb.read_index] == 'R')
-                    {
-                        buffer_read_usb.read_state = 4;
-                    }
-
-                    else
-                    {
-                        buffer_read_usb.read_state = 0;
-                    }
-
-                    break;
-
-                case 4:	// Lee el tamaño del payload
-                    buffer_read_usb.payload_length = buffer_read_usb.data[buffer_read_usb.read_index];
-
-                    buffer_read_usb.read_state = 5;
-
-                    break;
-
-                case 5:	// Token
-                    if (buffer_read_usb.data[buffer_read_usb.read_index] == ':')
-                    {
-                        buffer_read_usb.read_state = 6;
-                    }
-
-                    else
-                    {
-                        buffer_read_usb.read_state = 0;
-                    }
-
-                    break;
-
-                case 6:	// Comando
-                    buffer_read_usb.payload_init = buffer_read_usb.read_index + 1;
-
-                    buffer_read_usb.read_state = 7;
-
-                    break;
-
-                case 7:	// Verificación de datos
-                    // Si se terminaron de recibir todos los datos
-                    if (buffer_read_usb.read_index == (buffer_read_usb.payload_init + buffer_read_usb.payload_length))
-                    {
-                        // Se comprueba la integridad de datos
-                        if (checkXor(buffer_read_usb.data[buffer_read_usb.payload_init - 1], (uint8_t *)(buffer_read_usb.data),
-                                buffer_read_usb.payload_init, buffer_read_usb.payload_length)
-                                == buffer_read_usb.data[buffer_read_usb.read_index])
-                        {
-                            // Analisis del comando recibido
-                            switch (buffer_read_usb.data[buffer_read_usb.payload_init - 1])
-                            {
-                                case 0xD5:
-                                    if (buffer_read_usb.data[buffer_read_usb.payload_init] == 0x00)
-                                    {
-                                        QMessageBox *messageBox = new QMessageBox(this);
-
-                                        messageBox->setAttribute(Qt::WA_DeleteOnClose);
-                                        messageBox->setIcon(QMessageBox::Icon::Information);
-                                        messageBox->setWindowTitle("Parámetros de conexión");
-                                        messageBox->setText("Guardado en FLASH correcto");
-                                        messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-                                        messageBox->open();
-                                    }
-
-                                    else
-                                    {
-                                        QMessageBox *messageBox = new QMessageBox(this);
-
-                                        messageBox->setAttribute(Qt::WA_DeleteOnClose);
-                                        messageBox->setIcon(QMessageBox::Icon::Critical);
-                                        messageBox->setWindowTitle("Parámetros de conexión");
-                                        messageBox->setText("Guardado en FLASH erroneo");
-                                        messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-                                        messageBox->open();
-                                    }
-
-                                    break;
-
-                                case 0xC0:  // Datos del ADC
-                                    // Sensor 1
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 1];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 2];
-
-                                    ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC0(byte_translate.u16[0]);
-
-                                    // Sensor 2
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 3];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 4];
-
-                                    ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC1(byte_translate.u16[0]);
-
-                                    // Sensor 3
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 5];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 6];
-
-                                    ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC2(byte_translate.u16[0]);
-
-                                    // Sensor 4
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 7];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 8];
-
-                                    ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC3(byte_translate.u16[0]);
-
-                                    // Sensor 5
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 9];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 10];
-
-                                    ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC4(byte_translate.u16[0]);
-
-                                    // Sensor 6
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 11];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 12];
-
-                                    ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
-
-                                    if (adcData->isOpen())
-                                    {
-                                        adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
-                                    }
-
-                                    addPointChartADC5(byte_translate.u16[0]);
-
-                                    break;
-
-                                case 0xC3:  // Datos de la bateria
-                                    byte_translate.u8[0] = buffer_read_usb.data[buffer_read_usb.payload_init + 1];
-                                    byte_translate.u8[1] = buffer_read_usb.data[buffer_read_usb.payload_init + 2];
-
-                                    ui->widgetAuto->setBateryValue(byte_translate.u16[0]);
-
-                                    break;
-
-                                case 0xF0:  // ALIVE
-                                    pingUSB();
-
-                                    break;
-
-                                default:	// Comando no valido
-                                    sys->LOG("Error de comando en el paquete via USB");
-
-                                    break;
-                            }
-                        }
-
-                        // Corrupcion de datos al recibir
-                        else
-                        {
-                            sys->LOG("Error de ckecksum en el paquete via USB:\r\n\tComando: "
-                                    + QString::asprintf("%x\r\n\t", buffer_read_usb.data[buffer_read_usb.payload_init - 1])
-                                    + "Checksum recivido: " + QString::asprintf("%x\r\n\t", buffer_read_usb.data[buffer_read_usb.payload_init + buffer_read_usb.payload_length])
-                                    + "Checksum esperado: " + QString::asprintf("%x", (checkXor(buffer_read_usb.data[buffer_read_usb.payload_init - 1], (uint8_t *)(buffer_read_usb.data),
-                                                                                       buffer_read_usb.payload_init, buffer_read_usb.payload_length))));
-                        }
-
-                        // Detengo el timeout
-                        timerUSBReadTimeOut->stop();
-
-                        buffer_read_usb.read_state = 0;
-                    }
-
-                    break;
-            }
+            dataPackage(&cmd_manager_usb);
 
             buffer_read_usb.read_index++;
         }
@@ -432,244 +203,7 @@ void MainWindow::readDataUDP()
 
             if (buffer_read_udp.read_index != buffer_read_udp.write_index)
             {
-                switch (buffer_read_udp.read_state)
-                {
-                    case 0:	// Inicio de la abecera
-                        if (buffer_read_udp.data[buffer_read_udp.read_index] == 'U')
-                        {
-                            buffer_read_udp.read_state = 1;
-
-                            timerUDPReadTimeOut->start(100);
-                        }
-
-                        break;
-
-                    case 1:
-                        if (buffer_read_udp.data[buffer_read_udp.read_index] == 'N')
-                        {
-                            buffer_read_udp.read_state = 2;
-                        }
-
-                        else
-                        {
-                            buffer_read_udp.read_state = 0;
-                        }
-
-                        break;
-
-                    case 2:
-                        if (buffer_read_udp.data[buffer_read_udp.read_index] == 'E')
-                        {
-                            buffer_read_udp.read_state = 3;
-                        }
-
-                        else
-                        {
-                            buffer_read_udp.read_state = 0;
-                        }
-
-                        break;
-
-                    case 3:
-                        if (buffer_read_udp.data[buffer_read_udp.read_index] == 'R')
-                        {
-                            buffer_read_udp.read_state = 4;
-                        }
-
-                        else
-                        {
-                            buffer_read_udp.read_state = 0;
-                        }
-
-                        break;
-
-                    case 4:	// Lee el tamaño del payload
-                        buffer_read_udp.payload_length = buffer_read_udp.data[buffer_read_udp.read_index];
-
-                        buffer_read_udp.read_state = 5;
-
-                        break;
-
-                    case 5:	// Token
-                        if (buffer_read_udp.data[buffer_read_udp.read_index] == ':')
-                        {
-                            buffer_read_udp.read_state = 6;
-                        }
-
-                        else
-                        {
-                            buffer_read_udp.read_state = 0;
-                        }
-
-                        break;
-
-                    case 6:	// Comando
-                        buffer_read_udp.payload_init = buffer_read_udp.read_index + 1;
-
-                        buffer_read_udp.read_state = 7;
-
-                        break;
-
-                    case 7:	// Verificación de datos
-                        // Si se terminaron de recibir todos los datos
-                        if (buffer_read_udp.read_index == (buffer_read_udp.payload_init + buffer_read_udp.payload_length))
-                        {
-                            // Se comprueba la integridad de datos
-                            if (checkXor(buffer_read_udp.data[buffer_read_udp.payload_init - 1], (uint8_t *)(buffer_read_udp.data),
-                                    buffer_read_udp.payload_init, buffer_read_udp.payload_length)
-                                    == buffer_read_udp.data[buffer_read_udp.read_index])
-                            {
-                                // Analisis del comando recibido
-                                switch (buffer_read_udp.data[buffer_read_udp.payload_init - 1])
-                                {
-                                    case 0xD5:
-                                        if (buffer_read_udp.data[buffer_read_udp.payload_init] == 0x00)
-                                        {
-                                            QMessageBox *messageBox = new QMessageBox(this);
-
-                                            messageBox->setAttribute(Qt::WA_DeleteOnClose);
-                                            messageBox->setIcon(QMessageBox::Icon::Information);
-                                            messageBox->setWindowTitle("Parámetros de conexión");
-                                            messageBox->setText("Guardado en FLASH correcto");
-                                            messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-                                            messageBox->open();
-                                        }
-
-                                        else
-                                        {
-                                            QMessageBox *messageBox = new QMessageBox(this);
-
-                                            messageBox->setAttribute(Qt::WA_DeleteOnClose);
-                                            messageBox->setIcon(QMessageBox::Icon::Critical);
-                                            messageBox->setWindowTitle("Parámetros de conexión");
-                                            messageBox->setText("Guardado en FLASH erroneo");
-                                            messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-                                            messageBox->open();
-                                        }
-
-                                        break;
-
-                                    case 0xC0:  // Datos del ADC
-                                        // Sensor 1
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 1];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 2];
-
-                                        ui->widgetAuto->setSensor1Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC0(byte_translate.u16[0]);
-
-                                        // Sensor 2
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 3];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 4];
-
-                                        ui->widgetAuto->setSensor2Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC1(byte_translate.u16[0]);
-
-                                        // Sensor 3
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 5];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 6];
-
-                                        ui->widgetAuto->setSensor3Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC2(byte_translate.u16[0]);
-
-                                        // Sensor 4
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 7];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 8];
-
-                                        ui->widgetAuto->setSensor4Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC3(byte_translate.u16[0]);
-
-                                        // Sensor 5
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 9];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 10];
-
-                                        ui->widgetAuto->setSensor5Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u,", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC4(byte_translate.u16[0]);
-
-                                        // Sensor 6
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 11];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 12];
-
-                                        ui->widgetAuto->setSensor6Value(byte_translate.u16[0]);
-
-                                        if (adcData->isOpen())
-                                        {
-                                            adcData->write(QString::asprintf("%u\r\n", byte_translate.u16[0]).toLatin1());
-                                        }
-
-                                        addPointChartADC5(byte_translate.u16[0]);
-
-                                        break;
-
-                                    case 0xC3:  // Datos de la bateria
-                                        byte_translate.u8[0] = buffer_read_udp.data[buffer_read_udp.payload_init + 1];
-                                        byte_translate.u8[1] = buffer_read_udp.data[buffer_read_udp.payload_init + 2];
-
-                                        ui->widgetAuto->setBateryValue(byte_translate.u16[0]);
-
-                                        break;
-
-                                    case 0xF0:  // ALIVE
-                                        pingUDP();
-
-                                        break;
-
-                                    default:	// Comando no valido
-                                        sys->LOG("Error de comando en el paquete via UDP");
-
-                                        break;
-                                }
-                            }
-
-                            // Corrupcion de datos al recibir
-                            else
-                            {
-                                sys->LOG("Error de ckecksum en el paquete via UDP:\r\n\tComando: "
-                                        + QString::asprintf("%x\r\n\t", buffer_read_udp.data[buffer_read_udp.payload_init - 1])
-                                        + "Checksum recivido: " + QString::asprintf("%x\r\n\t", buffer_read_udp.data[buffer_read_udp.payload_init + buffer_read_udp.payload_length])
-                                        + "Checksum esperado: " + QString::asprintf("%x\r\n\t", (checkXor(buffer_read_udp.data[buffer_read_udp.payload_init - 1], (uint8_t *)(buffer_read_udp.data),
-                                                                                           buffer_read_udp.payload_init, buffer_read_udp.payload_length))));
-                            }
-
-                            // Detengo el timeout
-                            timerUDPReadTimeOut->stop();
-
-                            buffer_read_udp.read_state = 0;
-                        }
-
-                        break;
-                }
+                dataPackage(&cmd_manager_udp);
 
                 buffer_read_udp.read_index++;
             }
@@ -679,41 +213,364 @@ void MainWindow::readDataUDP()
 
 void MainWindow::timeOutReadUSB()
 {
-    timerUSBReadTimeOut->stop();
+    cmd_manager_usb.timeout->stop();
 
-    buffer_read_usb.read_state = 0;
+    cmd_manager_usb.read_state = 0;
 
-    sys->LOG("TimeOut leyendo paquete via USB");
+    // Se guarda el paquete que desencadeno el timeout
+    QString datosHex = getCurrentDataPackage(&cmd_manager_usb);
+
+    sys->LOG("TimeOut leyendo paquete via USB:\r\n\tComando: "
+            + QString::asprintf("%x\r\n\t", cmd_manager_usb.buffer_read->data[cmd_manager_usb.read_payload_init - 1])
+            + "Paquete: " + datosHex + "\r\n\t"
+            + "Checksum recivido: " + QString::asprintf("%x\r\n\t", cmd_manager_usb.buffer_read->data[cmd_manager_usb.read_payload_init + cmd_manager_usb.read_payload_length])
+            + "Checksum esperado: " + QString::asprintf("%x\r\n\t", (checkXor((uint8_t *)(buffer_read_udp.data), cmd_manager_usb.read_payload_init, cmd_manager_usb.read_payload_length)))
+            + "Indice de inicio: " + QString::number((uint8_t)(cmd_manager_usb.buffer_read->read_index - cmd_manager_usb.read_payload_length - 8)) + "\r\n\t"
+            + "Indice de fin: " + QString::number((uint8_t)(cmd_manager_usb.buffer_read->read_index)));
 }
 
 void MainWindow::timeOutReadUDP()
 {
-    timerUDPReadTimeOut->stop();
+    cmd_manager_udp.timeout->stop();
 
-    buffer_read_udp.read_state = 0;
+    cmd_manager_udp.read_state = 0;
 
-    sys->LOG("TimeOut leyendo paquete via UDP");
+    // Se guarda el paquete que desencadeno el timeout
+    QString datosHex = getCurrentDataPackage(&cmd_manager_udp);
+
+    sys->LOG("TimeOut leyendo paquete via UDP:\r\n\tComando: "
+            + QString::asprintf("%x\r\n\t", cmd_manager_udp.buffer_read->data[cmd_manager_udp.read_payload_init - 1])
+            + "Paquete: " + datosHex + "\r\n\t"
+            + "Checksum recivido: " + QString::asprintf("%x\r\n\t", cmd_manager_udp.buffer_read->data[cmd_manager_udp.read_payload_init + cmd_manager_udp.read_payload_length])
+            + "Checksum esperado: " + QString::asprintf("%x\r\n\t", (checkXor((uint8_t *)(buffer_read_udp.data), cmd_manager_udp.read_payload_init, cmd_manager_udp.read_payload_length)))
+            + "Indice de inicio: " + QString::number((uint8_t)(cmd_manager_udp.buffer_read->read_index - cmd_manager_udp.read_payload_length - 8)) + "\r\n\t"
+            + "Indice de fin: " + QString::number((uint8_t)(cmd_manager_udp.buffer_read->read_index)));
 }
 
-uint8_t MainWindow::checkXor(uint8_t cmd, uint8_t *payload, uint8_t payloadInit, uint8_t payloadLength)
+uint8_t MainWindow::checkXor(uint8_t *data, uint8_t init, uint8_t length)
+{
+    uint8_t val_xor = 0x00;
+
+    for (uint8_t i = 0 ; i < length ; i++)
+    {
+        val_xor ^= data[(uint8_t)(init + i)];
+    }
+
+    return val_xor;
+}
+
+uint8_t MainWindow::checkXor(QByteArray data)
 {
     uint8_t valXor = 0x00;
 
-    valXor ^= 'U';
-    valXor ^= 'N';
-    valXor ^= 'E';
-    valXor ^= 'R';
-    valXor ^= payloadLength;
-    valXor ^= ':';
-
-    valXor ^= cmd;
-
-    for (uint8_t i = payloadInit ; i < (uint8_t)(payloadInit + payloadLength) ; i++)
+    for (uint8_t byte : data)
     {
-        valXor ^= payload[i];
+        valXor ^= byte;
     }
 
     return valXor;
+}
+
+void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
+{
+    switch (cmd_manager->read_state)
+    {
+        // Inicio de la cabecera
+        case 0:
+            if (cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index] == 'U')
+            {
+                cmd_manager->timeout->start(100);
+
+                cmd_manager->read_state = 1;
+            }
+
+            break;
+
+        case 1:
+            if (cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index] == 'N')
+            {
+                cmd_manager->read_state = 2;
+            }
+
+            else
+            {
+                cmd_manager->read_state = 0;
+            }
+
+            break;
+
+        case 2:
+            if (cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index] == 'E')
+            {
+                cmd_manager->read_state = 3;
+            }
+
+            else
+            {
+                cmd_manager->read_state = 0;
+            }
+
+            break;
+
+        case 3:
+            if (cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index] == 'R')
+            {
+                cmd_manager->read_state = 4;
+            }
+
+            else
+            {
+                cmd_manager->read_state = 0;
+            }
+
+            break;
+
+        // Tamaño del payload
+        case 4:
+            cmd_manager->read_payload_length = cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index];
+
+            cmd_manager->read_state = 5;
+
+            break;
+
+        // Byte de token
+        case 5:
+            if (cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index] == ':')
+            {
+                cmd_manager->read_state = 6;
+            }
+
+            else
+            {
+                cmd_manager->read_state = 0;
+            }
+
+            break;
+
+        // Comando
+        case 6:
+            cmd_manager->read_payload_init = cmd_manager->buffer_read->read_index + 1;
+
+            cmd_manager->read_state = 7;
+
+            break;
+
+        // Verificación de datos
+        case 7:
+            // Se espera que se termine de recibir todos los datos
+            if (cmd_manager->buffer_read->read_index == (uint8_t)(cmd_manager->read_payload_init + cmd_manager->read_payload_length))
+            {
+                // Se comprueba la integridad de datos
+                if (checkXor((uint8_t *)(cmd_manager->buffer_read->data),
+                        (uint8_t)(cmd_manager->read_payload_init - 7),
+                        (uint8_t)(cmd_manager->read_payload_length + 7))
+                        == cmd_manager->buffer_read->data[cmd_manager->buffer_read->read_index])
+                {
+                    // Detengo el timeout
+                    cmd_manager->timeout->stop();
+
+                    // El estado se resetea
+                    cmd_manager->read_state = 0;
+
+                    // Analisis del comando recibido
+                    switch (cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init - 1)])
+                    {
+                        case 0xC0:  // Datos del ADC
+                            // Sensor 1
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+
+                            ui->widgetAuto->setSensor1Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u,", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC0(byte_converter.u16[0]);
+
+                            // Sensor 2
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 3)];
+
+                            ui->widgetAuto->setSensor2Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u,", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC1(byte_converter.u16[0]);
+
+                            // Sensor 3
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 4)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 5)];
+
+                            ui->widgetAuto->setSensor3Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u,", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC2(byte_converter.u16[0]);
+
+                            // Sensor 4
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 6)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 7)];
+
+                            ui->widgetAuto->setSensor4Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u,", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC3(byte_converter.u16[0]);
+
+                            // Sensor 5
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 8)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 9)];
+
+                            ui->widgetAuto->setSensor5Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u,", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC4(byte_converter.u16[0]);
+
+                            // Sensor 6
+                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 10)];
+                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 11)];
+
+                            ui->widgetAuto->setSensor6Value(byte_converter.u16[0]);
+
+                            if (adcData->isOpen())
+                            {
+                                adcData->write(QString::asprintf("%u\r\n", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartADC5(byte_converter.u16[0]);
+
+                            break;
+
+                        case 0xC1:
+
+                            break;
+
+                        case 0xC2:
+
+                            break;
+
+                        case 0xD5:
+                            if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0x00)
+                            {
+                                QMessageBox *messageBox = new QMessageBox(this);
+
+                                messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                messageBox->setIcon(QMessageBox::Icon::Information);
+                                messageBox->setWindowTitle("Parámetros de conexión");
+                                messageBox->setText("Guardado en FLASH correcto");
+                                messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                messageBox->open();
+                            }
+
+                            else
+                            {
+                                QMessageBox *messageBox = new QMessageBox(this);
+
+                                messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                messageBox->setIcon(QMessageBox::Icon::Critical);
+                                messageBox->setWindowTitle("Parámetros de conexión");
+                                messageBox->setText("Guardado en FLASH erroneo");
+                                messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                messageBox->open();
+                            }
+
+                            break;
+
+                        // Alive
+                        case 0xF0:
+                            if (cmd_manager->sendTarget == SendTarget::SendUSB)
+                            {
+                                pingUSB();
+                            }
+
+                            else
+                            {
+                                pingUDP();
+                            }
+
+                            break;
+
+                        // Comando no valido
+                        default:
+                            sys->LOG("Error de comando en el paquete via UDP");
+
+                            break;
+                    }
+                }
+
+                // Corrupcion de datos al recibir
+                else
+                {
+                    // Se guarda el paquete con errores
+                    QString datosHex = getCurrentDataPackage(cmd_manager);
+
+                    // De donde viene el paquete
+                    QString target;
+
+                    if (cmd_manager->sendTarget == SendTarget::SendUSB)
+                    {
+                        target = "USB";
+                    }
+
+                    else
+                    {
+                        target = "UDP";
+                    }
+
+                    sys->LOG("Error de ckecksum en el paquete via " + target + ":\r\n\tComando: "
+                            + QString::asprintf("%x\r\n\t", cmd_manager->buffer_read->data[cmd_manager->read_payload_init - 1])
+                            + "Paquete: " + datosHex + "\r\n\t"
+                            + "Checksum recivido: " + QString::asprintf("%x\r\n\t", cmd_manager->buffer_read->data[cmd_manager->read_payload_init + cmd_manager->read_payload_length])
+                            + "Checksum esperado: " + QString::asprintf("%x\r\n\t", (checkXor((uint8_t *)(buffer_read_udp.data), cmd_manager->read_payload_init, cmd_manager->read_payload_length)))
+                            + "Indice de inicio: " + QString::number((uint8_t)(cmd_manager->buffer_read->read_index - cmd_manager->read_payload_length - 8)) + "\r\n\t"
+                            + "Indice de fin: " + QString::number((uint8_t)(cmd_manager->buffer_read->read_index)));
+                }
+            }
+
+            break;
+    }
+}
+
+QString MainWindow::getCurrentDataPackage(cmd_manager_t *cmd_manager)
+{
+    // Se guarda el paquete con errores
+    QString datosHex;
+
+    uint8_t i = cmd_manager->buffer_read->read_index - cmd_manager->read_payload_length - 8;
+
+    while (i != (uint8_t)(cmd_manager->buffer_read->read_index + 1))
+    {
+        if (cmd_manager->buffer_read->data[i] < 0x10)
+        {
+            datosHex.append(QString::asprintf("0%x ", cmd_manager->buffer_read->data[i]));
+        }
+
+        else
+        {
+            datosHex.append(QString::asprintf("%x ", cmd_manager->buffer_read->data[i]));
+        }
+
+        i++;
+    }
+
+    return datosHex;
 }
 
 void MainWindow::on_actionUSB_triggered()
@@ -727,7 +584,7 @@ void MainWindow::on_actionUSB_triggered()
 
         connect(mainWindowDepuracionUSB, &MainWindowDepuracionUSB::closeSignal, this, &MainWindow::mainWindowDepuracionUSBClose);
 
-        sys->LOG("Depuración USB iniciada:\r\n\tNombre: " + serialPort->portName() + "\r\n\tBaud rate: " + serialPort->baudRate());
+        sys->LOG("Depuración USB iniciada:\r\n\tNombre: " + serialPort->portName() + "\r\n\tBaud rate: " + QString::number(serialPort->baudRate()));
     }
 
     else
@@ -762,7 +619,7 @@ void MainWindow::on_actionUDP_triggered()
 
         connect(mainWindowDepuracionUDP, &MainWindowDepuracionUDP::closeSignal, this, &MainWindow::mainWindowDepuracionUDPClose);
 
-        sys->LOG("Depuración UDP iniciada:\r\n\tIP: " + ip.toString() + "\r\n\tPuerto: " + port);
+        sys->LOG("Depuración UDP iniciada:\r\n\tIP: " + ip.toString() + "\r\n\tPuerto: " + QString::number(port));
     }
 
     else
@@ -1449,24 +1306,24 @@ void MainWindow::on_pushButtonEnviarVelocidadMotor_clicked()
 
     data.append(0xC1);
 
-    byte_translate.f = ui->doubleSpinBoxMotorDerecha->value();
+    byte_converter.f = ui->doubleSpinBoxMotorDerecha->value();
 
-    data.append(byte_translate.u8[0]);
-    data.append(byte_translate.u8[1]);
-    data.append(byte_translate.u8[2]);
-    data.append(byte_translate.u8[3]);
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+    data.append(byte_converter.u8[2]);
+    data.append(byte_converter.u8[3]);
 
-    byte_translate.f = ui->doubleSpinBoxMotorIzquierda->value();
+    byte_converter.f = ui->doubleSpinBoxMotorIzquierda->value();
 
-    data.append(byte_translate.u8[0]);
-    data.append(byte_translate.u8[1]);
-    data.append(byte_translate.u8[2]);
-    data.append(byte_translate.u8[3]);
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+    data.append(byte_converter.u8[2]);
+    data.append(byte_converter.u8[3]);
 
-    byte_translate.u16[0] = ui->spinBoxTiempoMotores->value();
+    byte_converter.u16[0] = ui->spinBoxTiempoMotores->value();
 
-    data.append(byte_translate.u8[0]);
-    data.append(byte_translate.u8[1]);
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
 
     sendCMD(data);
 }
@@ -1479,10 +1336,10 @@ void MainWindow::on_pushButtonEnviarFrecuencia_clicked()
 
     data.append(0xFF);
 
-    byte_translate.u16[0] = ui->spinBoxFrecuenciaMotores->value();
+    byte_converter.u16[0] = ui->spinBoxFrecuenciaMotores->value();
 
-    data.append(byte_translate.u8[0]);
-    data.append(byte_translate.u8[1]);
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
 
     sendCMD(data);
 }
