@@ -377,8 +377,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                     {
                         case 0xC0:  // Datos del ADC
                             // Sensor 1
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[cmd_manager->read_payload_init];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
 
                             ui->widgetAuto->setSensor1Value(byte_converter.u16[0]);
 
@@ -390,8 +390,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             addPointChartADC0(byte_converter.u16[0]);
 
                             // Sensor 2
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 2)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 3)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)];
 
                             ui->widgetAuto->setSensor2Value(byte_converter.u16[0]);
 
@@ -403,8 +403,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             addPointChartADC1(byte_converter.u16[0]);
 
                             // Sensor 3
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 4)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 5)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)];
 
                             ui->widgetAuto->setSensor3Value(byte_converter.u16[0]);
 
@@ -416,8 +416,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             addPointChartADC2(byte_converter.u16[0]);
 
                             // Sensor 4
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 6)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 7)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 6)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 7)];
 
                             ui->widgetAuto->setSensor4Value(byte_converter.u16[0]);
 
@@ -429,8 +429,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             addPointChartADC3(byte_converter.u16[0]);
 
                             // Sensor 5
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 8)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 9)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 8)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 9)];
 
                             ui->widgetAuto->setSensor5Value(byte_converter.u16[0]);
 
@@ -442,8 +442,8 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             addPointChartADC4(byte_converter.u16[0]);
 
                             // Sensor 6
-                            byte_converter.u8[0] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 10)];
-                            byte_converter.u8[1] = buffer_read_udp.data[(uint8_t)(cmd_manager->read_payload_init + 11)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 10)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 11)];
 
                             ui->widgetAuto->setSensor6Value(byte_converter.u16[0]);
 
