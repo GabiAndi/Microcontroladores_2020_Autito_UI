@@ -27,8 +27,9 @@ MainWindow::MainWindow(QWidget *parent)
 
     sys->LOG("Inicio de la aplicación");
 
-    // Archivo de datos del ADC
+    // Archivo de datos
     adcData = new QFile();
+    pidData = new QFile();
 
     // Puerto serie
     serialPort = new QSerialPort();
@@ -69,7 +70,10 @@ MainWindow::MainWindow(QWidget *parent)
     connect(cmd_manager_udp.timeout, &QTimer::timeout, this, &MainWindow::timeOutReadUDP);
 
     // Se crea los graficos
+    sys->LOG("Iniciando gráficas vacias");
+
     createChartADC();
+    createChartPID();
 
     // Timers de integridad de conexion
     // Para UDP
@@ -110,6 +114,7 @@ MainWindow::~MainWindow()
     delete udpSocket;
 
     delete adcData;
+    delete pidData;
 
     delete adc0Spline;
     delete adc1Spline;
@@ -375,6 +380,52 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                     // Analisis del comando recibido
                     switch (cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init - 1)])
                     {
+                        case 0xA0:  // Seteo de KP
+                            if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0x00)
+                            {
+                                byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                                byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+
+                                ui->spinBoxPIDKP->setValue(byte_converter.u16[0]);
+                            }
+
+                            break;
+
+                        case 0xA1:  // Seteo de KD
+                            if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0x00)
+                            {
+                                byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                                byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+
+                                ui->spinBoxPIDKD->setValue(byte_converter.u16[0]);
+                            }
+
+                            break;
+
+                        case 0xA2:  // Seteo de KI
+                            if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0x00)
+                            {
+                                byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                                byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+
+                                ui->spinBoxPIDKI->setValue(byte_converter.u16[0]);
+                            }
+
+                            break;
+
+                        case 0xA3:  // Datos del error PID
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[cmd_manager->read_payload_init];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%u\r\n", byte_converter.u16[0]).toLatin1());
+                            }
+
+                            addPointChartPID(byte_converter.u16[0]);
+
+                            break;
+
                         case 0xC0:  // Datos del ADC
                             // Sensor 1
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[cmd_manager->read_payload_init];
@@ -683,127 +734,18 @@ void MainWindow::on_pushButtonCapturaDatosADC_clicked()
         data.append((uint8_t)(0x00));
     }
 
-    data.append((uint8_t)(ui->horizontalSliderTiempoDeCaptura->value()));
+    data.append((uint8_t)(ui->horizontalSliderTiempoDeCapturaADC->value()));
 
     sendCMD(data);
 }
 
-void MainWindow::on_horizontalSliderTiempoDeCaptura_valueChanged(int value)
+void MainWindow::on_horizontalSliderTiempoDeCapturaADC_valueChanged(int value)
 {
     ui->labelTiempoCapturaADC->setText(QString::asprintf("%u ms", value));
 }
 
-void MainWindow::on_checkBox_stateChanged(int arg1)
-{
-    // No esta check
-    if (arg1 == 0)
-    {
-        if (adcData->isOpen())
-        {
-            adcData->close();
-
-            sys->LOG("Se cerro el archivo de datos de adc");
-        }
-    }
-
-    else
-    {
-        QString fileName;
-
-        QDate date = QDate::currentDate();
-        QTime time = QTime::currentTime();
-
-        if (!QDir("adc").exists())
-        {
-            QDir().mkdir("adc");
-        }
-
-        fileName.append(QString::asprintf("adc/"));
-
-        fileName.append(QString::asprintf("%i", date.year()));
-
-        if (date.month() < 10)
-        {
-            fileName.append(QString::asprintf("0%i", date.month()));
-        }
-
-        else
-        {
-            fileName.append(QString::asprintf("%i", date.month()));
-        }
-
-        if (date.day() < 10)
-        {
-            fileName.append(QString::asprintf("0%i", date.day()));
-        }
-
-        else
-        {
-            fileName.append(QString::asprintf("%i", date.day()));
-        }
-
-        if (time.hour() < 10)
-        {
-            fileName.append(QString::asprintf("0%i", time.hour()));
-        }
-
-        else
-        {
-            fileName.append(QString::asprintf("%i", time.hour()));
-        }
-
-        if (time.minute() < 10)
-        {
-            fileName.append(QString::asprintf("0%i", time.minute()));
-        }
-
-        else
-        {
-            fileName.append(QString::asprintf("%i", time.minute()));
-        }
-
-        if (time.second() < 10)
-        {
-            fileName.append(QString::asprintf("0%i", time.second()));
-        }
-
-        else
-        {
-            fileName.append(QString::asprintf("%i", time.second()));
-        }
-
-        fileName.append(".csv");
-
-        adcData->setFileName(fileName);
-
-        if (adcData->open(QIODevice::ReadWrite))
-        {
-            sys->LOG("Se creo el archivo de datos de adc:\r\n\tNombre: " + fileName);
-
-            adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
-        }
-
-        else
-        {
-            sys->LOG("Error al crear el archivo de datos de adc:\r\n\tNombre: " + fileName);
-
-            QMessageBox *messageBox = new QMessageBox(this);
-
-            messageBox->setAttribute(Qt::WA_DeleteOnClose);
-            messageBox->setIcon(QMessageBox::Icon::Warning);
-            messageBox->setWindowTitle("Error al abrir el archivo");
-            messageBox->setText("No se pudo crear el archivo del adc de sistema");
-            messageBox->setStandardButtons(QMessageBox::Button::Ok);
-
-            messageBox->open();
-        }
-    }
-}
-
 void MainWindow::createChartADC()
 {
-    sys->LOG("Iniciando gráficas vacias");
-
     adcChart = new QChart();
 
     adcChart->setTitle("Valores del ADC");
@@ -861,6 +803,42 @@ void MainWindow::createChartADC()
     adcChart->createDefaultAxes();
     adcChart->axes(Qt::Vertical).first()->setRange(0, 4096);
     adcChart->axes(Qt::Horizontal).first()->setRange(0, 30);
+}
+
+void MainWindow::createChartPID()
+{
+    pidChart = new QChart();
+
+    pidChart->setTitle("Valores del PID");
+    pidChart->legend()->setVisible(true);
+    pidChart->setAnimationOptions(QChart::AnimationOption::NoAnimation);
+
+    pidChartView = new QChartView(pidChart);
+
+    pidChartView->setRenderHint(QPainter::Antialiasing);
+
+    pidLayout = new QGridLayout();
+
+    pidLayout->addWidget(pidChartView, 0, 0);
+
+    ui->widgetPID->setLayout(pidLayout);
+
+    pidSpline = new QSplineSeries();
+
+    for (int i = 0 ; i <= 30 ; i++)
+    {
+        pidDatos.append(QPointF(i, 0));
+    }
+
+    pidSpline->append(pidDatos);
+
+    pidSpline->setName("Error");
+
+    pidChart->addSeries(pidSpline);
+
+    pidChart->createDefaultAxes();
+    pidChart->axes(Qt::Vertical).first()->setRange(0, 100);
+    pidChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
 void MainWindow::addPointChartADC0(uint16_t point)
@@ -945,6 +923,20 @@ void MainWindow::addPointChartADC5(uint16_t point)
 
     adc5Spline->clear();
     adc5Spline->append(adc5Datos);
+}
+
+void MainWindow::addPointChartPID(uint16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        pidDatos.replace(i, QPointF(i, pidDatos.value(i + 1).ry()));
+    }
+
+    pidDatos.removeLast();
+    pidDatos.append(QPointF(30, point * 1.0));
+
+    pidSpline->clear();
+    pidSpline->append(pidDatos);
 }
 
 void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
@@ -1107,32 +1099,6 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
         sendCMD(data);
 
         sys->LOG("Envio de PORT");
-    }
-
-    // Se guardan los datos en la flash del micro
-    QMessageBox flashMsg;
-
-    flashMsg.setWindowTitle("Parámetros de conexión");
-    flashMsg.setText("¿Desea guardar datos en FLASH?");
-    flashMsg.setStandardButtons(QMessageBox::Button::No | QMessageBox::Button::Yes);
-    flashMsg.setDefaultButton(QMessageBox::Button::Yes);
-
-    int flash = flashMsg.exec();
-
-    switch (flash)
-    {
-        case QMessageBox::Button::Yes:
-            QByteArray data;
-
-            data.append(0xD5);
-
-            data.append(0xFF);
-
-            sendCMD(data);
-
-            break;
-
-            sys->LOG("Envio de escritura en la FLASH");
     }
 }
 
@@ -1342,4 +1308,364 @@ void MainWindow::on_pushButtonEnviarFrecuencia_clicked()
     data.append(byte_converter.u8[1]);
 
     sendCMD(data);
+}
+
+void MainWindow::on_checkBoxADC_stateChanged(int arg1)
+{
+    // No esta check
+    if (arg1 == 0)
+    {
+        if (adcData->isOpen())
+        {
+            adcData->close();
+
+            sys->LOG("Se cerro el archivo de datos de adc");
+        }
+    }
+
+    else
+    {
+        QString fileName;
+
+        QDate date = QDate::currentDate();
+        QTime time = QTime::currentTime();
+
+        if (!QDir("adc").exists())
+        {
+            QDir().mkdir("adc");
+        }
+
+        fileName.append(QString::asprintf("adc/"));
+
+        fileName.append(QString::asprintf("%i", date.year()));
+
+        if (date.month() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.month()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.month()));
+        }
+
+        if (date.day() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.day()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.day()));
+        }
+
+        if (time.hour() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.hour()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.hour()));
+        }
+
+        if (time.minute() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.minute()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.minute()));
+        }
+
+        if (time.second() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.second()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.second()));
+        }
+
+        fileName.append(".csv");
+
+        adcData->setFileName(fileName);
+
+        if (adcData->open(QIODevice::ReadWrite))
+        {
+            sys->LOG("Se creo el archivo de datos de adc:\r\n\tNombre: " + fileName);
+
+            adcData->write("ADC0,ADC1,ADC2,ADC3,ADC4,ADC5\r\n");
+        }
+
+        else
+        {
+            sys->LOG("Error al crear el archivo de datos de adc:\r\n\tNombre: " + fileName);
+
+            QMessageBox *messageBox = new QMessageBox(this);
+
+            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+            messageBox->setIcon(QMessageBox::Icon::Warning);
+            messageBox->setWindowTitle("Error al abrir el archivo");
+            messageBox->setText("No se pudo crear el archivo del adc de sistema");
+            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+            messageBox->open();
+        }
+    }
+}
+
+void MainWindow::on_checkBoxPID_stateChanged(int arg1)
+{
+    // No esta check
+    if (arg1 == 0)
+    {
+        if (pidData->isOpen())
+        {
+            pidData->close();
+
+            sys->LOG("Se cerro el archivo de datos de pid");
+        }
+    }
+
+    else
+    {
+        QString fileName;
+
+        QDate date = QDate::currentDate();
+        QTime time = QTime::currentTime();
+
+        if (!QDir("pid").exists())
+        {
+            QDir().mkdir("pid");
+        }
+
+        fileName.append(QString::asprintf("pid/"));
+
+        fileName.append(QString::asprintf("%i", date.year()));
+
+        if (date.month() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.month()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.month()));
+        }
+
+        if (date.day() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", date.day()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", date.day()));
+        }
+
+        if (time.hour() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.hour()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.hour()));
+        }
+
+        if (time.minute() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.minute()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.minute()));
+        }
+
+        if (time.second() < 10)
+        {
+            fileName.append(QString::asprintf("0%i", time.second()));
+        }
+
+        else
+        {
+            fileName.append(QString::asprintf("%i", time.second()));
+        }
+
+        fileName.append(".csv");
+
+        pidData->setFileName(fileName);
+
+        if (pidData->open(QIODevice::ReadWrite))
+        {
+            sys->LOG("Se creo el archivo de datos de pid:\r\n\tNombre: " + fileName);
+
+            pidData->write("Error\r\n");
+        }
+
+        else
+        {
+            sys->LOG("Error al crear el archivo de datos de pid:\r\n\tNombre: " + fileName);
+
+            QMessageBox *messageBox = new QMessageBox(this);
+
+            messageBox->setAttribute(Qt::WA_DeleteOnClose);
+            messageBox->setIcon(QMessageBox::Icon::Warning);
+            messageBox->setWindowTitle("Error al abrir el archivo");
+            messageBox->setText("No se pudo crear el archivo del pid de sistema");
+            messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+            messageBox->open();
+        }
+    }
+}
+
+void MainWindow::on_pushButtonEnviarPIDKP_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA0);
+
+    data.append(0xFF);
+
+    byte_converter.u16[0] = ui->spinBoxPIDKP->value();
+
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonEnviarPIDKD_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA1);
+
+    data.append(0xFF);
+
+    byte_converter.u16[0] = ui->spinBoxPIDKD->value();
+
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonEnviarPIDKI_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA2);
+
+    data.append(0xFF);
+
+    byte_converter.u16[0] = ui->spinBoxPIDKI->value();
+
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonLeerKP_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA0);
+
+    byte_converter.u8[0] = 0x00;
+
+    data.append(byte_converter.u8[0]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonLeerKD_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA1);
+
+    byte_converter.u8[0] = 0x00;
+
+    data.append(byte_converter.u8[0]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonLeerKI_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA2);
+
+    byte_converter.u8[0] = 0x00;
+
+    data.append(byte_converter.u8[0]);
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonCapturarError_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA3);
+
+    if (ui->pushButtonCapturarError->text() == "Capturar error")
+    {
+        ui->pushButtonCapturarError->setText("Detener error");
+
+        data.append((uint8_t)(0xFF));
+    }
+
+    else if (ui->pushButtonCapturarError->text() == "Detener error")
+    {
+        ui->pushButtonCapturarError->setText("Capturar error");
+
+        data.append((uint8_t)(0x00));
+    }
+
+    data.append((uint8_t)(ui->horizontalSliderTiempoDeCapturaError->value()));
+
+    sendCMD(data);
+}
+
+void MainWindow::on_horizontalSliderTiempoDeCapturaError_valueChanged(int value)
+{
+    ui->labelTiempoCapturaError->setText(QString::asprintf("%u ms", value));
+}
+
+void MainWindow::on_pushButtonGuardarEnFLASH_clicked()
+{
+    // Se guardan los datos en la flash del micro
+    QMessageBox flashMsg;
+
+    flashMsg.setWindowTitle("Parámetros de conexión");
+    flashMsg.setText("¿Desea guardar datos en FLASH?");
+    flashMsg.setStandardButtons(QMessageBox::Button::No | QMessageBox::Button::Yes);
+    flashMsg.setDefaultButton(QMessageBox::Button::Yes);
+
+    int flash = flashMsg.exec();
+
+    switch (flash)
+    {
+        case QMessageBox::Button::Yes:
+            QByteArray data;
+
+            data.append(0xD5);
+
+            data.append(0xFF);
+
+            sendCMD(data);
+
+            break;
+
+            sys->LOG("Grabado en la FLASH");
+    }
 }

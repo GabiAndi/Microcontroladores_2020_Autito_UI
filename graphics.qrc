@@ -1,5 +1,6 @@
 <RCC>
     <qresource prefix="/">
         <file>src/graphics/Autito.png</file>
+        <file>src/graphics/Refrescar.png</file>
     </qresource>
 </RCC>

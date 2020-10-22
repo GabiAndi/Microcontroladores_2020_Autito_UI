@@ -35,16 +35,16 @@ void WidgetPanel::paintEvent(QPaintEvent *)
 
     // Dibujo de los valores de los sensores
     // Sensores laterales
-    painter.drawText(-410, 110, QString::asprintf("%u", sensor6Value));
-    painter.drawText(320, 110, QString::asprintf("%u", sensor1Value));
+    painter.drawText(-410, 110, QString::asprintf("%u", sensor1Value));
+    painter.drawText(320, 110, QString::asprintf("%u", sensor6Value));
 
     // Sensores frontales laterales
     painter.drawText(-290, -60, QString::asprintf("%u", sensor2Value));
-    painter.drawText(200, -60, QString::asprintf("%u", sensor3Value));
+    painter.drawText(200, -60, QString::asprintf("%u", sensor5Value));
 
     // Sensores frontales cruzados
-    painter.drawText(-130, -150, QString::asprintf("%u", sensor4Value));
-    painter.drawText(60, -150, QString::asprintf("%u", sensor5Value));
+    painter.drawText(-130, -150, QString::asprintf("%u", sensor3Value));
+    painter.drawText(60, -150, QString::asprintf("%u", sensor4Value));
 }
 
 void WidgetPanel::setSensor1Value(uint16_t sensor1Value)

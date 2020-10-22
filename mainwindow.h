@@ -117,8 +117,9 @@ class MainWindow : public QMainWindow
         cmd_manager_t cmd_manager_udp;
 
         QFile *adcData = nullptr;
+        QFile *pidData = nullptr;
 
-        // Grafico clapeta
+        // Grafico del ADC
         QSplineSeries *adc0Spline;
         QSplineSeries *adc1Spline;
         QSplineSeries *adc2Spline;
@@ -136,6 +137,14 @@ class MainWindow : public QMainWindow
         QList<QPointF> adc4Datos;
         QList<QPointF> adc5Datos;
 
+        // Grafico del PID
+        QSplineSeries *pidSpline;
+        QChart *pidChart;
+        QChartView *pidChartView;
+        QGridLayout *pidLayout;
+
+        QList<QPointF> pidDatos;
+
         uint8_t checkXor(uint8_t *data, uint8_t init, uint8_t length);
         uint8_t checkXor(QByteArray data);
 
@@ -144,6 +153,7 @@ class MainWindow : public QMainWindow
         QString getCurrentDataPackage(cmd_manager_t *cmd_manager);
 
         void createChartADC();
+        void createChartPID();
 
         void addPointChartADC0(uint16_t point);
         void addPointChartADC1(uint16_t point);
@@ -151,6 +161,8 @@ class MainWindow : public QMainWindow
         void addPointChartADC3(uint16_t point);
         void addPointChartADC4(uint16_t point);
         void addPointChartADC5(uint16_t point);
+
+        void addPointChartPID(uint16_t point);
 
         void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
@@ -176,10 +188,20 @@ class MainWindow : public QMainWindow
         void on_actionUSB_2_triggered();
         void on_actionUDP_2_triggered();
         void on_pushButtonCapturaDatosADC_clicked();
-        void on_horizontalSliderTiempoDeCaptura_valueChanged(int value);
-        void on_checkBox_stateChanged(int arg1);
         void on_pushButtonConfigurarWiFi_clicked();
         void on_pushButtonEnviarVelocidadMotor_clicked();
         void on_pushButtonEnviarFrecuencia_clicked();
+        void on_checkBoxADC_stateChanged(int arg1);
+        void on_checkBoxPID_stateChanged(int arg1);
+        void on_pushButtonEnviarPIDKP_clicked();
+        void on_pushButtonEnviarPIDKD_clicked();
+        void on_pushButtonEnviarPIDKI_clicked();
+        void on_pushButtonCapturarError_clicked();
+        void on_pushButtonLeerKP_clicked();
+        void on_pushButtonLeerKD_clicked();
+        void on_pushButtonLeerKI_clicked();
+        void on_horizontalSliderTiempoDeCapturaError_valueChanged(int value);
+        void on_horizontalSliderTiempoDeCapturaADC_valueChanged(int value);
+        void on_pushButtonGuardarEnFLASH_clicked();
 };
 #endif // MAINWINDOW_H
