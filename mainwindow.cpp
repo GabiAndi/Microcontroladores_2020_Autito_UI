@@ -419,10 +419,43 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                             if (pidData->isOpen())
                             {
-                                pidData->write(QString::asprintf("%u\r\n", byte_converter.u16[0]).toLatin1());
+                                pidData->write(QString::asprintf("%u\r\n", byte_converter.i16[0]).toLatin1());
                             }
 
-                            addPointChartPID(byte_converter.u16[0]);
+                            addPointChartPID(byte_converter.i16[0]);
+
+                            break;
+
+                        case 0xAA:
+                            if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0xFF)
+                            {
+                                QMessageBox *messageBox = new QMessageBox(this);
+
+                                messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                messageBox->setIcon(QMessageBox::Icon::Warning);
+                                messageBox->setWindowTitle("Modo PID");
+                                messageBox->setText("Modo de control automático activado");
+                                messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                messageBox->open();
+
+                                ui->pushButtonControlAutomatico->setText("Desactivar control");
+                            }
+
+                            else if (cmd_manager->buffer_read->data[cmd_manager->read_payload_init] == 0x00)
+                            {
+                                QMessageBox *messageBox = new QMessageBox(this);
+
+                                messageBox->setAttribute(Qt::WA_DeleteOnClose);
+                                messageBox->setIcon(QMessageBox::Icon::Warning);
+                                messageBox->setWindowTitle("Modo PID");
+                                messageBox->setText("Modo de control automático desactivado");
+                                messageBox->setStandardButtons(QMessageBox::Button::Ok);
+
+                                messageBox->open();
+
+                                ui->pushButtonControlAutomatico->setText("Activar control");
+                            }
 
                             break;
 
@@ -513,6 +546,21 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                         case 0xC2:
 
+                            break;
+
+                        case 0xD0:
+                            break;
+
+                        case 0xD1:
+                            break;
+
+                        case 0xD2:
+                            break;
+
+                        case 0xD3:
+                            break;
+
+                        case 0xD4:
                             break;
 
                         case 0xD5:
@@ -824,20 +872,25 @@ void MainWindow::createChartPID()
     ui->widgetPID->setLayout(pidLayout);
 
     pidSpline = new QSplineSeries();
+    pidCeroSpline = new QSplineSeries();
 
     for (int i = 0 ; i <= 30 ; i++)
     {
         pidDatos.append(QPointF(i, 0));
+        pidCeroDatos.append(QPointF(i, 0));
     }
 
     pidSpline->append(pidDatos);
+    pidCeroSpline->append(pidCeroDatos);
 
     pidSpline->setName("Error");
+    pidCeroSpline->setName("Cero");
 
     pidChart->addSeries(pidSpline);
+    pidChart->addSeries(pidCeroSpline);
 
     pidChart->createDefaultAxes();
-    pidChart->axes(Qt::Vertical).first()->setRange(0, 100);
+    pidChart->axes(Qt::Vertical).first()->setRange(-2000, 2000);
     pidChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
@@ -925,7 +978,7 @@ void MainWindow::addPointChartADC5(uint16_t point)
     adc5Spline->append(adc5Datos);
 }
 
-void MainWindow::addPointChartPID(uint16_t point)
+void MainWindow::addPointChartPID(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1668,4 +1721,27 @@ void MainWindow::on_pushButtonGuardarEnFLASH_clicked()
 
             sys->LOG("Grabado en la FLASH");
     }
+}
+
+void MainWindow::on_pushButtonControlAutomatico_clicked()
+{
+    QByteArray data;
+
+    data.append(0xAA);
+
+    if (ui->pushButtonControlAutomatico->text() == "Activar control")
+    {
+        ui->pushButtonControlAutomatico->setText("Desactivar control");
+
+        data.append((uint8_t)(0xFF));
+    }
+
+    else if (ui->pushButtonControlAutomatico->text() == "Desactivar control")
+    {
+        ui->pushButtonControlAutomatico->setText("Activar control");
+
+        data.append((uint8_t)(0x00));
+    }
+
+    sendCMD(data);
 }

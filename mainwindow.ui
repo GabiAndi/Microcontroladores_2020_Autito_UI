@@ -717,10 +717,10 @@
          <item>
           <widget class="QSpinBox" name="spinBoxPIDKP">
            <property name="minimum">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="maximum">
-            <number>100</number>
+            <number>300</number>
            </property>
            <property name="singleStep">
             <number>1</number>
@@ -798,10 +798,10 @@
          <item>
           <widget class="QSpinBox" name="spinBoxPIDKD">
            <property name="minimum">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="maximum">
-            <number>100</number>
+            <number>300</number>
            </property>
            <property name="singleStep">
             <number>1</number>
@@ -879,10 +879,10 @@
          <item>
           <widget class="QSpinBox" name="spinBoxPIDKI">
            <property name="minimum">
-            <number>1</number>
+            <number>0</number>
            </property>
            <property name="maximum">
-            <number>100</number>
+            <number>200</number>
            </property>
            <property name="singleStep">
             <number>1</number>
@@ -1018,6 +1018,43 @@
             <string>255 ms</string>
            </property>
           </widget>
+         </item>
+        </layout>
+       </item>
+       <item>
+        <layout class="QHBoxLayout" name="horizontalLayout_21">
+         <item>
+          <spacer name="horizontalSpacer_17">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
+         </item>
+         <item>
+          <widget class="QPushButton" name="pushButtonControlAutomatico">
+           <property name="text">
+            <string>Activar control</string>
+           </property>
+          </widget>
+         </item>
+         <item>
+          <spacer name="horizontalSpacer_18">
+           <property name="orientation">
+            <enum>Qt::Horizontal</enum>
+           </property>
+           <property name="sizeHint" stdset="0">
+            <size>
+             <width>40</width>
+             <height>20</height>
+            </size>
+           </property>
+          </spacer>
          </item>
         </layout>
        </item>

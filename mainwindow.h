@@ -139,11 +139,13 @@ class MainWindow : public QMainWindow
 
         // Grafico del PID
         QSplineSeries *pidSpline;
+        QSplineSeries *pidCeroSpline;
         QChart *pidChart;
         QChartView *pidChartView;
         QGridLayout *pidLayout;
 
         QList<QPointF> pidDatos;
+        QList<QPointF> pidCeroDatos;
 
         uint8_t checkXor(uint8_t *data, uint8_t init, uint8_t length);
         uint8_t checkXor(QByteArray data);
@@ -162,7 +164,7 @@ class MainWindow : public QMainWindow
         void addPointChartADC4(uint16_t point);
         void addPointChartADC5(uint16_t point);
 
-        void addPointChartPID(uint16_t point);
+        void addPointChartPID(int16_t point);
 
         void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
@@ -203,5 +205,6 @@ class MainWindow : public QMainWindow
         void on_horizontalSliderTiempoDeCapturaError_valueChanged(int value);
         void on_horizontalSliderTiempoDeCapturaADC_valueChanged(int value);
         void on_pushButtonGuardarEnFLASH_clicked();
+        void on_pushButtonControlAutomatico_clicked();
 };
 #endif // MAINWINDOW_H
