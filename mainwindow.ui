@@ -318,12 +318,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBoxMotorDerecha">
-           <property name="minimum">
-            <double>-100.000000000000000</double>
-           </property>
+          <widget class="QSpinBox" name="spinBoxMotorDerecha">
            <property name="maximum">
-            <double>100.000000000000000</double>
+            <number>100</number>
            </property>
           </widget>
          </item>
@@ -339,12 +336,9 @@
           </widget>
          </item>
          <item>
-          <widget class="QDoubleSpinBox" name="doubleSpinBoxMotorIzquierda">
-           <property name="minimum">
-            <double>-100.000000000000000</double>
-           </property>
+          <widget class="QSpinBox" name="spinBoxMotorIzquierda">
            <property name="maximum">
-            <double>100.000000000000000</double>
+            <number>100</number>
            </property>
           </widget>
          </item>

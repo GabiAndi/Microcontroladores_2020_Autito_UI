@@ -1325,19 +1325,13 @@ void MainWindow::on_pushButtonEnviarVelocidadMotor_clicked()
 
     data.append(0xC1);
 
-    byte_converter.f = ui->doubleSpinBoxMotorDerecha->value();
+    byte_converter.i8[0] = ui->spinBoxMotorDerecha->value();
 
     data.append(byte_converter.u8[0]);
-    data.append(byte_converter.u8[1]);
-    data.append(byte_converter.u8[2]);
-    data.append(byte_converter.u8[3]);
 
-    byte_converter.f = ui->doubleSpinBoxMotorIzquierda->value();
+    byte_converter.i8[0] = ui->spinBoxMotorIzquierda->value();
 
     data.append(byte_converter.u8[0]);
-    data.append(byte_converter.u8[1]);
-    data.append(byte_converter.u8[2]);
-    data.append(byte_converter.u8[3]);
 
     byte_converter.u16[0] = ui->spinBoxTiempoMotores->value();
 
