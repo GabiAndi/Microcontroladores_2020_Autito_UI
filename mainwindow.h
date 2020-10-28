@@ -137,15 +137,39 @@ class MainWindow : public QMainWindow
         QList<QPointF> adc4Datos;
         QList<QPointF> adc5Datos;
 
+        // Grafico del Error
+        QSplineSeries *errorSpline;
+        QSplineSeries *errorVelSpline;
+        QSplineSeries *errorCeroSpline;
+        QChart *errorChart;
+        QChartView *errorChartView;
+        QGridLayout *errorLayout;
+
+        QList<QPointF> errorDatos;
+        QList<QPointF> errorVelDatos;
+        QList<QPointF> errorCeroDatos;
+
         // Grafico del PID
-        QSplineSeries *pidSpline;
-        QSplineSeries *pidCeroSpline;
+        QSplineSeries *pidpSpline;
+        QSplineSeries *piddSpline;
+        QSplineSeries *pidiSpline;
         QChart *pidChart;
         QChartView *pidChartView;
         QGridLayout *pidLayout;
 
-        QList<QPointF> pidDatos;
-        QList<QPointF> pidCeroDatos;
+        QList<QPointF> pidpDatos;
+        QList<QPointF> piddDatos;
+        QList<QPointF> pidiDatos;
+
+        // Grafico de los motores
+        QSplineSeries *motorDerechaSpline;
+        QSplineSeries *motorIzquierdaSpline;
+        QChart *motorChart;
+        QChartView *motorChartView;
+        QGridLayout *motorLayout;
+
+        QList<QPointF> motorDerechaDatos;
+        QList<QPointF> motorIzquierdaDatos;
 
         uint8_t checkXor(uint8_t *data, uint8_t init, uint8_t length);
         uint8_t checkXor(QByteArray data);
@@ -155,7 +179,9 @@ class MainWindow : public QMainWindow
         QString getCurrentDataPackage(cmd_manager_t *cmd_manager);
 
         void createChartADC();
+        void createChartError();
         void createChartPID();
+        void createChartMotores();
 
         void addPointChartADC0(uint16_t point);
         void addPointChartADC1(uint16_t point);
@@ -164,7 +190,15 @@ class MainWindow : public QMainWindow
         void addPointChartADC4(uint16_t point);
         void addPointChartADC5(uint16_t point);
 
-        void addPointChartPID(int16_t point);
+        void addPointChartError(int16_t point);
+        void addPointChartErrorVel(int16_t point);
+
+        void addPointChartPIDP(int8_t point);
+        void addPointChartPIDD(int8_t point);
+        void addPointChartPIDI(int8_t point);
+
+        void addPointChartMotorDerecha(int8_t point);
+        void addPointChartMotorIzquierda(int8_t point);
 
         void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
@@ -198,13 +232,13 @@ class MainWindow : public QMainWindow
         void on_pushButtonEnviarPIDKP_clicked();
         void on_pushButtonEnviarPIDKD_clicked();
         void on_pushButtonEnviarPIDKI_clicked();
-        void on_pushButtonCapturarError_clicked();
         void on_pushButtonLeerKP_clicked();
         void on_pushButtonLeerKD_clicked();
         void on_pushButtonLeerKI_clicked();
-        void on_horizontalSliderTiempoDeCapturaError_valueChanged(int value);
         void on_horizontalSliderTiempoDeCapturaADC_valueChanged(int value);
         void on_pushButtonGuardarEnFLASH_clicked();
         void on_pushButtonControlAutomatico_clicked();
+        void on_pushButtonCapturarPID_clicked();
+        void on_horizontalSliderTiempoDeCapturaPID_valueChanged(int value);
 };
 #endif // MAINWINDOW_H

@@ -73,7 +73,9 @@ MainWindow::MainWindow(QWidget *parent)
     sys->LOG("Iniciando gráficas vacias");
 
     createChartADC();
+    createChartError();
     createChartPID();
+    createChartMotores();
 
     // Timers de integridad de conexion
     // Para UDP
@@ -414,15 +416,39 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
                             break;
 
                         case 0xA3:  // Datos del error PID
-                            byte_converter.u8[0] = cmd_manager->buffer_read->data[cmd_manager->read_payload_init];
-                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                            // Proporcional
+                            addPointChartPIDP(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)]);
 
-                            if (pidData->isOpen())
+                            // Derivativo
+                            addPointChartPIDD(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)]);
+
+                            // Integral
+                            addPointChartPIDI(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)]);
+
+                            // Error
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)];
+
+                            addPointChartError(byte_converter.i16[0]);
+
+                            // Error velocidad
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 6)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 7)];
+
+                            addPointChartErrorVel(byte_converter.i16[0]);
+
+                            // Velocidad del motor derecho
+                            addPointChartMotorDerecha(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 8)]);
+
+                            // Velocidad del motor derecho
+                            addPointChartMotorIzquierda(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 9)]);
+
+                            /*if (pidData->isOpen())
                             {
                                 pidData->write(QString::asprintf("%u\r\n", byte_converter.i16[0]).toLatin1());
-                            }
+                            }*/
 
-                            addPointChartPID(byte_converter.i16[0]);
+                            //addPointChartPID(byte_converter.i16[0]);
 
                             break;
 
@@ -853,6 +879,52 @@ void MainWindow::createChartADC()
     adcChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
+void MainWindow::createChartError()
+{
+    errorChart = new QChart();
+
+    errorChart->setTitle("Valores del error");
+    errorChart->legend()->setVisible(true);
+    errorChart->setAnimationOptions(QChart::AnimationOption::NoAnimation);
+
+    errorChartView = new QChartView(errorChart);
+
+    errorChartView->setRenderHint(QPainter::Antialiasing);
+
+    errorLayout = new QGridLayout();
+
+    errorLayout->addWidget(errorChartView, 0, 0);
+
+    ui->widgetPIDError->setLayout(errorLayout);
+
+    errorSpline = new QSplineSeries();
+    errorVelSpline = new QSplineSeries();
+    errorCeroSpline = new QSplineSeries();
+
+    for (int i = 0 ; i <= 30 ; i++)
+    {
+        errorDatos.append(QPointF(i, 0));
+        errorVelDatos.append(QPointF(i, 0));
+        errorCeroDatos.append(QPointF(i, 0));
+    }
+
+    errorSpline->append(errorDatos);
+    errorVelSpline->append(errorVelDatos);
+    errorCeroSpline->append(errorCeroDatos);
+
+    errorSpline->setName("Error");
+    errorVelSpline->setName("Error velocidad");
+    errorCeroSpline->setName("Cero");
+
+    errorChart->addSeries(errorSpline);
+    errorChart->addSeries(errorVelSpline);
+    errorChart->addSeries(errorCeroSpline);
+
+    errorChart->createDefaultAxes();
+    errorChart->axes(Qt::Vertical).first()->setRange(-4000, 4000);
+    errorChart->axes(Qt::Horizontal).first()->setRange(0, 30);
+}
+
 void MainWindow::createChartPID()
 {
     pidChart = new QChart();
@@ -869,29 +941,75 @@ void MainWindow::createChartPID()
 
     pidLayout->addWidget(pidChartView, 0, 0);
 
-    ui->widgetPID->setLayout(pidLayout);
+    ui->widgetPIDConstantes->setLayout(pidLayout);
 
-    pidSpline = new QSplineSeries();
-    pidCeroSpline = new QSplineSeries();
+    pidpSpline = new QSplineSeries();
+    piddSpline = new QSplineSeries();
+    pidiSpline = new QSplineSeries();
 
     for (int i = 0 ; i <= 30 ; i++)
     {
-        pidDatos.append(QPointF(i, 0));
-        pidCeroDatos.append(QPointF(i, 0));
+        pidpDatos.append(QPointF(i, 0));
+        piddDatos.append(QPointF(i, 0));
+        pidiDatos.append(QPointF(i, 0));
     }
 
-    pidSpline->append(pidDatos);
-    pidCeroSpline->append(pidCeroDatos);
+    pidpSpline->append(pidpDatos);
+    piddSpline->append(piddDatos);
+    pidiSpline->append(pidiDatos);
 
-    pidSpline->setName("Error");
-    pidCeroSpline->setName("Cero");
+    pidpSpline->setName("Proporcional");
+    piddSpline->setName("Derivativo");
+    pidiSpline->setName("Integral");
 
-    pidChart->addSeries(pidSpline);
-    pidChart->addSeries(pidCeroSpline);
+    pidChart->addSeries(pidpSpline);
+    pidChart->addSeries(piddSpline);
+    pidChart->addSeries(pidiSpline);
 
     pidChart->createDefaultAxes();
-    pidChart->axes(Qt::Vertical).first()->setRange(-2000, 2000);
+    pidChart->axes(Qt::Vertical).first()->setRange(-100, 100);
     pidChart->axes(Qt::Horizontal).first()->setRange(0, 30);
+}
+
+void MainWindow::createChartMotores()
+{
+    motorChart = new QChart();
+
+    motorChart->setTitle("Valores de los motores");
+    motorChart->legend()->setVisible(true);
+    motorChart->setAnimationOptions(QChart::AnimationOption::NoAnimation);
+
+    motorChartView = new QChartView(motorChart);
+
+    motorChartView->setRenderHint(QPainter::Antialiasing);
+
+    motorLayout = new QGridLayout();
+
+    motorLayout->addWidget(motorChartView, 0, 0);
+
+    ui->widgetPIDMotores->setLayout(motorLayout);
+
+    motorDerechaSpline = new QSplineSeries();
+    motorIzquierdaSpline = new QSplineSeries();
+
+    for (int i = 0 ; i <= 30 ; i++)
+    {
+        motorDerechaDatos.append(QPointF(i, 0));
+        motorIzquierdaDatos.append(QPointF(i, 0));
+    }
+
+    motorDerechaSpline->append(motorDerechaDatos);
+    motorIzquierdaSpline->append(motorIzquierdaDatos);
+
+    motorDerechaSpline->setName("Derecha");
+    motorIzquierdaSpline->setName("Izquierda");
+
+    motorChart->addSeries(motorDerechaSpline);
+    motorChart->addSeries(motorIzquierdaSpline);
+
+    motorChart->createDefaultAxes();
+    motorChart->axes(Qt::Vertical).first()->setRange(-100, 100);
+    motorChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
 void MainWindow::addPointChartADC0(uint16_t point)
@@ -978,18 +1096,102 @@ void MainWindow::addPointChartADC5(uint16_t point)
     adc5Spline->append(adc5Datos);
 }
 
-void MainWindow::addPointChartPID(int16_t point)
+void MainWindow::addPointChartError(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
-        pidDatos.replace(i, QPointF(i, pidDatos.value(i + 1).ry()));
+        errorDatos.replace(i, QPointF(i, errorDatos.value(i + 1).ry()));
     }
 
-    pidDatos.removeLast();
-    pidDatos.append(QPointF(30, point * 1.0));
+    errorDatos.removeLast();
+    errorDatos.append(QPointF(30, point * 1.0));
 
-    pidSpline->clear();
-    pidSpline->append(pidDatos);
+    errorSpline->clear();
+    errorSpline->append(errorDatos);
+}
+
+void MainWindow::addPointChartErrorVel(int16_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        errorVelDatos.replace(i, QPointF(i, errorVelDatos.value(i + 1).ry()));
+    }
+
+    errorVelDatos.removeLast();
+    errorVelDatos.append(QPointF(30, point * 1.0));
+
+    errorVelSpline->clear();
+    errorVelSpline->append(errorVelDatos);
+}
+
+void MainWindow::addPointChartPIDP(int8_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        pidpDatos.replace(i, QPointF(i, pidpDatos.value(i + 1).ry()));
+    }
+
+    pidpDatos.removeLast();
+    pidpDatos.append(QPointF(30, point * 1.0));
+
+    pidpSpline->clear();
+    pidpSpline->append(pidpDatos);
+}
+
+void MainWindow::addPointChartPIDD(int8_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        piddDatos.replace(i, QPointF(i, piddDatos.value(i + 1).ry()));
+    }
+
+    piddDatos.removeLast();
+    piddDatos.append(QPointF(30, point * 1.0));
+
+    piddSpline->clear();
+    piddSpline->append(piddDatos);
+}
+
+void MainWindow::addPointChartPIDI(int8_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        pidiDatos.replace(i, QPointF(i, pidiDatos.value(i + 1).ry()));
+    }
+
+    pidiDatos.removeLast();
+    pidiDatos.append(QPointF(30, point * 1.0));
+
+    pidiSpline->clear();
+    pidiSpline->append(pidiDatos);
+}
+
+void MainWindow::addPointChartMotorDerecha(int8_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        motorDerechaDatos.replace(i, QPointF(i, motorDerechaDatos.value(i + 1).ry()));
+    }
+
+    motorDerechaDatos.removeLast();
+    motorDerechaDatos.append(QPointF(30, point * 1.0));
+
+    motorDerechaSpline->clear();
+    motorDerechaSpline->append(motorDerechaDatos);
+}
+
+void MainWindow::addPointChartMotorIzquierda(int8_t point)
+{
+    for (int i = 0 ; i < 30 ; i++)
+    {
+        motorIzquierdaDatos.replace(i, QPointF(i, motorIzquierdaDatos.value(i + 1).ry()));
+    }
+
+    motorIzquierdaDatos.removeLast();
+    motorIzquierdaDatos.append(QPointF(30, point * 1.0));
+
+    motorIzquierdaSpline->clear();
+    motorIzquierdaSpline->append(motorIzquierdaDatos);
 }
 
 void MainWindow::sendCMD(QByteArray sendData, SendTarget Target)
@@ -1658,36 +1860,6 @@ void MainWindow::on_pushButtonLeerKI_clicked()
     sendCMD(data);
 }
 
-void MainWindow::on_pushButtonCapturarError_clicked()
-{
-    QByteArray data;
-
-    data.append(0xA3);
-
-    if (ui->pushButtonCapturarError->text() == "Capturar error")
-    {
-        ui->pushButtonCapturarError->setText("Detener error");
-
-        data.append((uint8_t)(0xFF));
-    }
-
-    else if (ui->pushButtonCapturarError->text() == "Detener error")
-    {
-        ui->pushButtonCapturarError->setText("Capturar error");
-
-        data.append((uint8_t)(0x00));
-    }
-
-    data.append((uint8_t)(ui->horizontalSliderTiempoDeCapturaError->value()));
-
-    sendCMD(data);
-}
-
-void MainWindow::on_horizontalSliderTiempoDeCapturaError_valueChanged(int value)
-{
-    ui->labelTiempoCapturaError->setText(QString::asprintf("%u ms", value));
-}
-
 void MainWindow::on_pushButtonGuardarEnFLASH_clicked()
 {
     // Se guardan los datos en la flash del micro
@@ -1738,4 +1910,34 @@ void MainWindow::on_pushButtonControlAutomatico_clicked()
     }
 
     sendCMD(data);
+}
+
+void MainWindow::on_pushButtonCapturarPID_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA3);
+
+    if (ui->pushButtonCapturarPID->text() == "Capturar PID")
+    {
+        ui->pushButtonCapturarPID->setText("Detener PID");
+
+        data.append((uint8_t)(0xFF));
+    }
+
+    else if (ui->pushButtonCapturarPID->text() == "Detener PID")
+    {
+        ui->pushButtonCapturarPID->setText("Capturar PID");
+
+        data.append((uint8_t)(0x00));
+    }
+
+    data.append((uint8_t)(ui->horizontalSliderTiempoDeCapturaPID->value()));
+
+    sendCMD(data);
+}
+
+void MainWindow::on_horizontalSliderTiempoDeCapturaPID_valueChanged(int value)
+{
+    ui->labelTiempoCapturaError->setText(QString::asprintf("%u ms", value));
 }
