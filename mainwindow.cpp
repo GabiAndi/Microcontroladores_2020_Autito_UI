@@ -112,12 +112,18 @@ MainWindow::~MainWindow()
     disconnect(timerCheckStatusUDP, &QTimer::timeout, this, &MainWindow::checkStatusUDP);
     disconnect(timerCheckStatusUSB, &QTimer::timeout, this, &MainWindow::checkStatusUSB);
 
-    delete serialPort;
-    delete udpSocket;
+    // Manejador del sistem
+    delete sys;
 
+    // Archivos
     delete adcData;
     delete pidData;
 
+    // Puertos
+    delete serialPort;
+    delete udpSocket;
+
+    // Grafico del ADC
     delete adc0Spline;
     delete adc1Spline;
     delete adc2Spline;
@@ -128,11 +134,35 @@ MainWindow::~MainWindow()
     delete adcChartView;
     delete adcLayout;
 
+    // Grafico del Error
+    delete errorSpline;
+    delete errorVelSpline;
+    delete errorCeroSpline;
+    delete errorChart;
+    delete errorChartView;
+    delete errorLayout;
+
+    // Grafico del PID
+    delete pidpSpline;
+    delete piddSpline;
+    delete pidiSpline;
+    delete pidChart;
+    delete pidChartView;
+    delete pidLayout;
+
+    // Grafico de los motores
+    delete motorDerechaSpline;
+    delete motorIzquierdaSpline;
+    delete motorChart;
+    delete motorChartView;
+    delete motorLayout;
+
+    // Medicion de latencia
     delete timerCheckStatusUDP;
     delete timerPingUDP;
-    delete timerCheckStatusUSB;
 
-    delete sys;
+    delete timerCheckStatusUSB;
+    delete timerPingUSB;
 
     delete ui;
 }
@@ -417,38 +447,61 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                         case 0xA3:  // Datos del error PID
                             // Proporcional
-                            addPointChartPIDP(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)]);
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)];
+
+                            addPointChartPIDP(byte_converter.i16[0]);
 
                             // Derivativo
-                            addPointChartPIDD(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)]);
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)];
+
+                            addPointChartPIDD(byte_converter.i16[0]);
 
                             // Integral
-                            addPointChartPIDI(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)]);
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 6)];
+
+                            addPointChartPIDI(byte_converter.i16[0]);
 
                             // Error
-                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)];
-                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 7)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 8)];
 
                             addPointChartError(byte_converter.i16[0]);
 
                             // Error velocidad
-                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 6)];
-                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 7)];
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 9)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 10)];
 
                             addPointChartErrorVel(byte_converter.i16[0]);
 
                             // Velocidad del motor derecho
-                            addPointChartMotorDerecha(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 8)]);
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 11)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 12)];
+
+                            addPointChartMotorDerecha(byte_converter.i16[0]);
 
                             // Velocidad del motor derecho
-                            addPointChartMotorIzquierda(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 9)]);
+                            byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 13)];
+                            byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 14)];
+
+                            addPointChartMotorIzquierda(byte_converter.i16[0]);
 
                             /*if (pidData->isOpen())
                             {
                                 pidData->write(QString::asprintf("%u\r\n", byte_converter.i16[0]).toLatin1());
                             }*/
 
-                            //addPointChartPID(byte_converter.i16[0]);
+                            break;
+
+                        case 0xA4:
+                            ui->spinBoxP0->setValue((int8_t)(cmd_manager->buffer_read->data[cmd_manager->read_payload_init]));
+                            ui->spinBoxP1->setValue((int8_t)(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 1)]));
+                            ui->spinBoxP2->setValue((int8_t)(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 2)]));
+                            ui->spinBoxP3->setValue((int8_t)(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)]));
+                            ui->spinBoxP4->setValue((int8_t)(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)]));
+                            ui->spinBoxP5->setValue((int8_t)(cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)]));
 
                             break;
 
@@ -967,7 +1020,7 @@ void MainWindow::createChartPID()
     pidChart->addSeries(pidiSpline);
 
     pidChart->createDefaultAxes();
-    pidChart->axes(Qt::Vertical).first()->setRange(-100, 100);
+    pidChart->axes(Qt::Vertical).first()->setRange(-10000, 10000);
     pidChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
@@ -1008,7 +1061,7 @@ void MainWindow::createChartMotores()
     motorChart->addSeries(motorIzquierdaSpline);
 
     motorChart->createDefaultAxes();
-    motorChart->axes(Qt::Vertical).first()->setRange(-100, 100);
+    motorChart->axes(Qt::Vertical).first()->setRange(-10000, 10000);
     motorChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
@@ -1124,7 +1177,7 @@ void MainWindow::addPointChartErrorVel(int16_t point)
     errorVelSpline->append(errorVelDatos);
 }
 
-void MainWindow::addPointChartPIDP(int8_t point)
+void MainWindow::addPointChartPIDP(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1138,7 +1191,7 @@ void MainWindow::addPointChartPIDP(int8_t point)
     pidpSpline->append(pidpDatos);
 }
 
-void MainWindow::addPointChartPIDD(int8_t point)
+void MainWindow::addPointChartPIDD(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1152,7 +1205,7 @@ void MainWindow::addPointChartPIDD(int8_t point)
     piddSpline->append(piddDatos);
 }
 
-void MainWindow::addPointChartPIDI(int8_t point)
+void MainWindow::addPointChartPIDI(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1166,7 +1219,7 @@ void MainWindow::addPointChartPIDI(int8_t point)
     pidiSpline->append(pidiDatos);
 }
 
-void MainWindow::addPointChartMotorDerecha(int8_t point)
+void MainWindow::addPointChartMotorDerecha(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1180,7 +1233,7 @@ void MainWindow::addPointChartMotorDerecha(int8_t point)
     motorDerechaSpline->append(motorDerechaDatos);
 }
 
-void MainWindow::addPointChartMotorIzquierda(int8_t point)
+void MainWindow::addPointChartMotorIzquierda(int16_t point)
 {
     for (int i = 0 ; i < 30 ; i++)
     {
@@ -1269,7 +1322,7 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
     {
         QByteArray data;
 
-        data.append(0xD0);
+        data.append((uint8_t)(0xD0));
 
         data.append(ssid.length());
 
@@ -1288,7 +1341,7 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
     {
         QByteArray data;
 
-        data.append(0xD1);
+        data.append((uint8_t)(0xD1));
 
         data.append(psw.length());
 
@@ -1307,7 +1360,7 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
     {
         QByteArray data;
 
-        data.append(0xD2);
+        data.append((uint8_t)(0xD2));
 
         data.append(ipMcu.length());
 
@@ -1326,7 +1379,7 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
     {
         QByteArray data;
 
-        data.append(0xD3);
+        data.append((uint8_t)(0xD3));
 
         data.append(ipPc.length());
 
@@ -1345,7 +1398,7 @@ void MainWindow::on_pushButtonConfigurarWiFi_clicked()
     {
         QByteArray data;
 
-        data.append(0xD4);
+        data.append((uint8_t)(0xD4));
 
         data.append(port.length());
 
@@ -1411,7 +1464,7 @@ void MainWindow::checkStatusUDP()
 
         QByteArray data;
 
-        data.append(0xF0);
+        data.append((uint8_t)(0xF0));
 
         sendCMD(data, SendTarget::SendUDP);
     }
@@ -1493,7 +1546,7 @@ void MainWindow::checkStatusUSB()
 
         QByteArray data;
 
-        data.append(0xF0);
+        data.append((uint8_t)(0xF0));
 
         sendCMD(data, SendTarget::SendUSB);
     }
@@ -1525,15 +1578,17 @@ void MainWindow::on_pushButtonEnviarVelocidadMotor_clicked()
 {
     QByteArray data;
 
-    data.append(0xC1);
+    data.append((uint8_t)(0xC1));
 
-    byte_converter.i8[0] = ui->spinBoxMotorDerecha->value();
-
-    data.append(byte_converter.u8[0]);
-
-    byte_converter.i8[0] = ui->spinBoxMotorIzquierda->value();
+    byte_converter.i16[0] = ui->spinBoxMotorDerecha->value();
 
     data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
+
+    byte_converter.i16[0] = ui->spinBoxMotorIzquierda->value();
+
+    data.append(byte_converter.u8[0]);
+    data.append(byte_converter.u8[1]);
 
     byte_converter.u16[0] = ui->spinBoxTiempoMotores->value();
 
@@ -1547,9 +1602,9 @@ void MainWindow::on_pushButtonEnviarFrecuencia_clicked()
 {
     QByteArray data;
 
-    data.append(0xC2);
+    data.append((uint8_t)(0xC2));
 
-    data.append(0xFF);
+    data.append((uint8_t)(0xFF));
 
     byte_converter.u16[0] = ui->spinBoxFrecuenciaMotores->value();
 
@@ -1777,9 +1832,9 @@ void MainWindow::on_pushButtonEnviarPIDKP_clicked()
 {
     QByteArray data;
 
-    data.append(0xA0);
+    data.append((uint8_t)(0xA0));
 
-    data.append(0xFF);
+    data.append((uint8_t)(0xFF));
 
     byte_converter.u16[0] = ui->spinBoxPIDKP->value();
 
@@ -1793,9 +1848,9 @@ void MainWindow::on_pushButtonEnviarPIDKD_clicked()
 {
     QByteArray data;
 
-    data.append(0xA1);
+    data.append((uint8_t)(0xA1));
 
-    data.append(0xFF);
+    data.append((uint8_t)(0xFF));
 
     byte_converter.u16[0] = ui->spinBoxPIDKD->value();
 
@@ -1809,9 +1864,9 @@ void MainWindow::on_pushButtonEnviarPIDKI_clicked()
 {
     QByteArray data;
 
-    data.append(0xA2);
+    data.append((uint8_t)(0xA2));
 
-    data.append(0xFF);
+    data.append((uint8_t)(0xFF));
 
     byte_converter.u16[0] = ui->spinBoxPIDKI->value();
 
@@ -1825,11 +1880,9 @@ void MainWindow::on_pushButtonLeerKP_clicked()
 {
     QByteArray data;
 
-    data.append(0xA0);
+    data.append((uint8_t)(0xA0));
 
-    byte_converter.u8[0] = 0x00;
-
-    data.append(byte_converter.u8[0]);
+    data.append((uint8_t)(0x00));
 
     sendCMD(data);
 }
@@ -1838,11 +1891,9 @@ void MainWindow::on_pushButtonLeerKD_clicked()
 {
     QByteArray data;
 
-    data.append(0xA1);
+    data.append((uint8_t)(0xA1));
 
-    byte_converter.u8[0] = 0x00;
-
-    data.append(byte_converter.u8[0]);
+    data.append((uint8_t)(0x00));
 
     sendCMD(data);
 }
@@ -1851,11 +1902,9 @@ void MainWindow::on_pushButtonLeerKI_clicked()
 {
     QByteArray data;
 
-    data.append(0xA2);
+    data.append((uint8_t)(0xA2));
 
-    byte_converter.u8[0] = 0x00;
-
-    data.append(byte_converter.u8[0]);
+    data.append((uint8_t)(0x00));
 
     sendCMD(data);
 }
@@ -1877,9 +1926,9 @@ void MainWindow::on_pushButtonGuardarEnFLASH_clicked()
         case QMessageBox::Button::Yes:
             QByteArray data;
 
-            data.append(0xD5);
+            data.append((uint8_t)(0xD5));
 
-            data.append(0xFF);
+            data.append((uint8_t)(0xFF));
 
             sendCMD(data);
 
@@ -1893,7 +1942,7 @@ void MainWindow::on_pushButtonControlAutomatico_clicked()
 {
     QByteArray data;
 
-    data.append(0xAA);
+    data.append((uint8_t)(0xAA));
 
     if (ui->pushButtonControlAutomatico->text() == "Activar control")
     {
@@ -1916,7 +1965,7 @@ void MainWindow::on_pushButtonCapturarPID_clicked()
 {
     QByteArray data;
 
-    data.append(0xA3);
+    data.append((uint8_t)(0xA3));
 
     if (ui->pushButtonCapturarPID->text() == "Capturar PID")
     {
@@ -1940,4 +1989,33 @@ void MainWindow::on_pushButtonCapturarPID_clicked()
 void MainWindow::on_horizontalSliderTiempoDeCapturaPID_valueChanged(int value)
 {
     ui->labelTiempoCapturaError->setText(QString::asprintf("%u ms", value));
+}
+
+void MainWindow::on_pushButtonLeerPesosPonderaciones_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA4);
+
+    data.append((uint8_t)(0x00));
+
+    sendCMD(data);
+}
+
+void MainWindow::on_pushButtonEstablecerPesosPonderaciones_clicked()
+{
+    QByteArray data;
+
+    data.append(0xA4);
+
+    data.append((uint8_t)(0xFF));
+
+    data.append((uint8_t)(ui->spinBoxP0->value()));
+    data.append((uint8_t)(ui->spinBoxP1->value()));
+    data.append((uint8_t)(ui->spinBoxP2->value()));
+    data.append((uint8_t)(ui->spinBoxP3->value()));
+    data.append((uint8_t)(ui->spinBoxP4->value()));
+    data.append((uint8_t)(ui->spinBoxP5->value()));
+
+    sendCMD(data);
 }

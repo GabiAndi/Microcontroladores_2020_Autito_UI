@@ -193,12 +193,12 @@ class MainWindow : public QMainWindow
         void addPointChartError(int16_t point);
         void addPointChartErrorVel(int16_t point);
 
-        void addPointChartPIDP(int8_t point);
-        void addPointChartPIDD(int8_t point);
-        void addPointChartPIDI(int8_t point);
+        void addPointChartPIDP(int16_t point);
+        void addPointChartPIDD(int16_t point);
+        void addPointChartPIDI(int16_t point);
 
-        void addPointChartMotorDerecha(int8_t point);
-        void addPointChartMotorIzquierda(int8_t point);
+        void addPointChartMotorDerecha(int16_t point);
+        void addPointChartMotorIzquierda(int16_t point);
 
         void sendCMD(QByteArray sendData, SendTarget Target = SendTarget::SendALL);
 
@@ -240,5 +240,7 @@ class MainWindow : public QMainWindow
         void on_pushButtonControlAutomatico_clicked();
         void on_pushButtonCapturarPID_clicked();
         void on_horizontalSliderTiempoDeCapturaPID_valueChanged(int value);
+        void on_pushButtonLeerPesosPonderaciones_clicked();
+        void on_pushButtonEstablecerPesosPonderaciones_clicked();
 };
 #endif // MAINWINDOW_H
