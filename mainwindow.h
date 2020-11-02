@@ -140,14 +140,12 @@ class MainWindow : public QMainWindow
         // Grafico del Error
         QSplineSeries *errorSpline;
         QSplineSeries *errorVelSpline;
-        QSplineSeries *errorCeroSpline;
         QChart *errorChart;
         QChartView *errorChartView;
         QGridLayout *errorLayout;
 
         QList<QPointF> errorDatos;
         QList<QPointF> errorVelDatos;
-        QList<QPointF> errorCeroDatos;
 
         // Grafico del PID
         QSplineSeries *pidpSpline;

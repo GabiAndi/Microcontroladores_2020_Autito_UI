@@ -137,7 +137,6 @@ MainWindow::~MainWindow()
     // Grafico del Error
     delete errorSpline;
     delete errorVelSpline;
-    delete errorCeroSpline;
     delete errorChart;
     delete errorChartView;
     delete errorLayout;
@@ -452,11 +451,21 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                             addPointChartPIDP(byte_converter.i16[0]);
 
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
+
                             // Derivativo
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 3)];
                             byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 4)];
 
                             addPointChartPIDD(byte_converter.i16[0]);
+
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
 
                             // Integral
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 5)];
@@ -464,11 +473,21 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                             addPointChartPIDI(byte_converter.i16[0]);
 
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
+
                             // Error
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 7)];
                             byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 8)];
 
                             addPointChartError(byte_converter.i16[0]);
+
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
 
                             // Error velocidad
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 9)];
@@ -476,11 +495,21 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                             addPointChartErrorVel(byte_converter.i16[0]);
 
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
+
                             // Velocidad del motor derecho
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 11)];
                             byte_converter.u8[1] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 12)];
 
                             addPointChartMotorDerecha(byte_converter.i16[0]);
+
+                            if (pidData->isOpen())
+                            {
+                                pidData->write(QString::asprintf("%i,", byte_converter.i16[0]).toLatin1());
+                            }
 
                             // Velocidad del motor derecho
                             byte_converter.u8[0] = cmd_manager->buffer_read->data[(uint8_t)(cmd_manager->read_payload_init + 13)];
@@ -488,10 +517,10 @@ void MainWindow::dataPackage(cmd_manager_t *cmd_manager)
 
                             addPointChartMotorIzquierda(byte_converter.i16[0]);
 
-                            /*if (pidData->isOpen())
+                            if (pidData->isOpen())
                             {
-                                pidData->write(QString::asprintf("%u\r\n", byte_converter.i16[0]).toLatin1());
-                            }*/
+                                pidData->write(QString::asprintf("%i\r\n", byte_converter.i16[0]).toLatin1());
+                            }
 
                             break;
 
@@ -952,29 +981,24 @@ void MainWindow::createChartError()
 
     errorSpline = new QSplineSeries();
     errorVelSpline = new QSplineSeries();
-    errorCeroSpline = new QSplineSeries();
 
     for (int i = 0 ; i <= 30 ; i++)
     {
         errorDatos.append(QPointF(i, 0));
         errorVelDatos.append(QPointF(i, 0));
-        errorCeroDatos.append(QPointF(i, 0));
     }
 
     errorSpline->append(errorDatos);
     errorVelSpline->append(errorVelDatos);
-    errorCeroSpline->append(errorCeroDatos);
 
     errorSpline->setName("Error");
     errorVelSpline->setName("Error velocidad");
-    errorCeroSpline->setName("Cero");
 
     errorChart->addSeries(errorSpline);
     errorChart->addSeries(errorVelSpline);
-    errorChart->addSeries(errorCeroSpline);
 
     errorChart->createDefaultAxes();
-    errorChart->axes(Qt::Vertical).first()->setRange(-4000, 4000);
+    errorChart->axes(Qt::Vertical).first()->setRange(-10000, 10000);
     errorChart->axes(Qt::Horizontal).first()->setRange(0, 30);
 }
 
@@ -1808,7 +1832,7 @@ void MainWindow::on_checkBoxPID_stateChanged(int arg1)
         {
             sys->LOG("Se creo el archivo de datos de pid:\r\n\tNombre: " + fileName);
 
-            pidData->write("Error\r\n");
+            pidData->write("P,D,I,ERROR,ERROR_VEL,VEL_MOT_DER,VEL_MOT_IZQ\r\n");
         }
 
         else
